@@ -1428,9 +1428,9 @@ function filteredManagementSurgeries() {
   }).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || ''));
 }
 
-function createManagementInfo(iconName, label, value) {
+function createManagementInfo(iconName, label, value, className = '') {
   const item = document.createElement('div');
-  item.className = 'management-info';
+  item.className = 'management-info' + (className ? ' ' + className : '');
   item.append(createManagementIcon(iconName));
   const copy = document.createElement('div');
   copy.className = 'management-info-copy';
@@ -1440,16 +1440,43 @@ function createManagementInfo(iconName, label, value) {
   const detail = document.createElement('span');
   detail.className = 'management-info-value';
   detail.textContent = value === null || value === undefined || value === '' ? '—' : String(value);
+  if (value !== null && value !== undefined && value !== '') detail.title = String(value);
   copy.append(heading, detail);
   item.append(copy);
   return item;
 }
 
-function createManagementGroup(items, className = '') {
-  const group = document.createElement('div');
-  group.className = 'management-info-group ' + className;
-  items.forEach((item) => group.append(createManagementInfo(item[0], item[1], item[2])));
-  return group;
+function createManagementObservation(value) {
+  const observation = String(value || '').trim();
+  if (!observation) return null;
+  const wrapper = document.createElement('div');
+  wrapper.className = 'management-observation';
+  if (observation.length <= 150) {
+    const label = document.createElement('strong');
+    label.textContent = 'Observações';
+    const text = document.createElement('span');
+    text.textContent = observation;
+    wrapper.append(label, text);
+    return wrapper;
+  }
+  const disclosure = document.createElement('details');
+  disclosure.className = 'management-observation-details';
+  const summary = document.createElement('summary');
+  const label = document.createElement('strong');
+  label.textContent = 'Observações';
+  const preview = document.createElement('span');
+  preview.textContent = observation.slice(0, 150).trimEnd() + '…';
+  preview.title = observation;
+  const toggle = document.createElement('span');
+  toggle.className = 'material-symbols management-observation-toggle';
+  toggle.setAttribute('aria-hidden', 'true');
+  toggle.textContent = 'expand_more';
+  summary.append(label, preview, toggle);
+  const fullText = document.createElement('p');
+  fullText.textContent = observation;
+  disclosure.append(summary, fullText);
+  wrapper.append(disclosure);
+  return wrapper;
 }
 
 function createFinanceItem(iconName, label, value) {
@@ -1504,31 +1531,26 @@ function createSurgeryCard(surgery) {
 
   const details = document.createElement('div');
   details.className = 'surgery-card-details';
-  details.append(
-    createManagementGroup([
-      ['phone', 'Telefone', surgery.phone],
-      ['calendar', 'Data da consulta', managementDate(surgery.consultationDate)],
-    ]),
-    createManagementGroup([
-      ['staff', 'Orçamentista', surgery.employeeName || surgery.employee?.name],
-      ['business', 'Empresa', surgery.company?.name || 'Empresa não definida'],
-      ...(surgery.convenio?.trim() ? [['business', 'Convênio', surgery.convenio]] : []),
-      ['hospital', 'Hospital', surgery.hospital?.name],
-      ['location', 'Cidade', surgery.city?.name],
-    ], 'management-company-group'),
-    createManagementGroup([
-      ['doctor', 'Médica', surgery.doctor?.name],
-      ['doctor', 'Anestesista', surgery.anesthetist],
-    ]),
-    createManagementGroup([
-      ['surgery', 'Cirurgia', surgery.isReserved ? '—' : surgery.procedure],
-      ['calendar', 'Data do retorno', managementDate(surgery.returnDate)],
-      ['surgery', 'Tipo do retorno', surgery.returnType],
-    ]),
-    createManagementGroup([
-      ['notes', 'Observações', surgery.observations],
-    ], 'management-notes-group'),
+  const returnInfo = document.createElement('div');
+  returnInfo.className = 'management-info management-info-return-group';
+  returnInfo.append(
+    createManagementInfo('calendar', 'Data do retorno', managementDate(surgery.returnDate), 'management-info-nested'),
+    createManagementInfo('surgery', 'Tipo do retorno', surgery.returnType, 'management-info-nested'),
   );
+  details.append(
+    createManagementInfo('phone', 'Telefone', surgery.phone),
+    createManagementInfo('calendar', 'Data da consulta', managementDate(surgery.consultationDate)),
+    createManagementInfo('staff', 'Orçamentista', surgery.employeeName || surgery.employee?.name),
+    createManagementInfo('business', 'Empresa', surgery.company?.name || 'Empresa não definida'),
+    createManagementInfo('hospital', 'Hospital', surgery.hospital?.name),
+    createManagementInfo('location', 'Cidade', surgery.city?.name),
+    createManagementInfo('doctor', 'Médica / Cirurgião', surgery.doctor?.name),
+    createManagementInfo('doctor', 'Anestesista', surgery.anesthetist),
+    createManagementInfo('surgery', 'Cirurgia', surgery.isReserved ? '—' : surgery.procedure, 'management-info-procedure'),
+    createManagementInfo('business', 'Convênio', surgery.convenio),
+    returnInfo,
+  );
+  const observation = createManagementObservation(surgery.observations);
 
   const total = managementMoney(surgery.totalAmount);
   const deposit = managementMoney(surgery.depositPaid);
@@ -1540,9 +1562,11 @@ function createSurgeryCard(surgery) {
     createFinanceItem('paid', 'Sinal Pago', managementMoneyLabel(surgery.depositPaid)),
     createFinanceItem('pending', 'Falta Pagar', pending === null ? '—' : managementMoneyLabel(pending)),
   );
-  card.append(header, details, finance);
+  card.append(header, details);
+  if (observation) card.append(observation);
+  card.append(finance);
   card.addEventListener('click', (event) => {
-    if (!event.target.closest('button')) openSurgeryFromRow(surgery);
+    if (!event.target.closest('button, details')) openSurgeryFromRow(surgery);
   });
   card.addEventListener('keydown', (event) => {
     if (event.target === card && (event.key === 'Enter' || event.key === ' ')) {

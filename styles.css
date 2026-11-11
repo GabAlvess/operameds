@@ -294,6 +294,42 @@
 #agendaMonthYear{width:90px;height:34px;padding:0 8px;border:1px solid #dce6e9;border-radius:7px;background:#f8fbfc;color:#24475a;font:inherit;font-size:12px;font-weight:600}
 .agenda-month-selection{max-height:62px;overflow:auto;margin-top:9px;color:#71818c;font-size:10px;line-height:1.45}
 .share-table tr.agenda-block-row td{background:#EDE4FF;color:#59359A;border-color:#dccdf5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#page-gestao .surgery-card{padding:10px 12px 9px;border-radius:12px}
+#page-gestao .surgery-card-header{padding:0 1px 8px;gap:10px}
+#page-gestao .surgery-card-patient{gap:8px}
+#page-gestao .surgery-card-patient h3{font-size:16px}
+#page-gestao .management-icon.patient-mark{width:32px;height:32px;padding:7px}
+#page-gestao .surgery-card-appointment{gap:10px;font-size:11px}
+#page-gestao .surgery-card-menu{width:30px;height:28px}
+#page-gestao .surgery-card-details{grid-template-columns:repeat(6,minmax(0,1fr));gap:8px 0;padding:8px 0;min-width:0}
+#page-gestao .surgery-card-details>.management-info{min-width:0;padding:0 8px;border-right:1px solid #e6ecef}
+#page-gestao .surgery-card-details>.management-info:nth-child(6),#page-gestao .surgery-card-details>.management-info:nth-child(11){border-right:0}
+#page-gestao .surgery-card-details>.management-info-procedure{grid-column:span 2}
+#page-gestao .surgery-card-details .management-info{gap:6px}
+#page-gestao .surgery-card-details .management-icon{width:16px;height:16px;margin-top:1px;font-size:16px}
+#page-gestao .surgery-card-details .management-info-copy{gap:1px}
+#page-gestao .surgery-card-details .management-info-label{font-size:8px;line-height:1.2}
+#page-gestao .surgery-card-details .management-info-value{overflow:hidden;font-size:10px;line-height:1.25;text-overflow:ellipsis;white-space:nowrap}
+#page-gestao .surgery-card-details>.management-info-return-group{display:grid;align-content:start;gap:6px;border-right:0}
+#page-gestao .management-info-return-group>.management-info-nested{padding:0;border:0}
+#page-gestao .management-observation{display:flex;align-items:flex-start;gap:8px;margin:0 0 7px;padding:7px 10px;border:1px solid #e6eef0;border-radius:8px;background:#f8fbfc;color:#536d79;font-size:10px;line-height:1.4}
+#page-gestao .management-observation>strong,#page-gestao .management-observation-details summary>strong{flex:none;color:#29495b;font-size:9px}
+#page-gestao .management-observation>span{min-width:0;overflow-wrap:anywhere}
+#page-gestao .management-observation-details{flex:1;min-width:0}
+#page-gestao .management-observation-details summary{display:flex;align-items:center;gap:8px;min-width:0;cursor:pointer;list-style:none}
+#page-gestao .management-observation-details summary::-webkit-details-marker{display:none}
+#page-gestao .management-observation-details summary>span:nth-child(2){min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#page-gestao .management-observation-toggle{margin-left:auto;color:#547585;font-size:17px;transition:transform .15s}
+#page-gestao .management-observation-details[open] .management-observation-toggle{transform:rotate(180deg)}
+#page-gestao .management-observation-details p{margin:7px 0 1px;overflow-wrap:anywhere;color:#536d79;white-space:pre-wrap}
+#page-gestao .surgery-card-finance{padding:7px 6px;border-radius:9px}
+#page-gestao .management-finance-item{gap:7px;padding:0 10px}
+#page-gestao .management-finance-item .management-icon{width:18px;height:18px;font-size:18px}
+#page-gestao .management-finance-item span{font-size:8px}
+#page-gestao .management-finance-item strong{font-size:14px}
+@media(max-width:1120px){#page-gestao .surgery-card-details{grid-template-columns:repeat(4,minmax(0,1fr));row-gap:9px}#page-gestao .surgery-card-details>.management-info:nth-child(4),#page-gestao .surgery-card-details>.management-info:nth-child(8){border-right:0}#page-gestao .surgery-card-details>.management-info:nth-child(6){border-right:1px solid #e6ecef}#page-gestao .surgery-card-details>.management-info-return-group{border-right:0}}
+@media(max-width:700px){#page-gestao .surgery-card-details{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 0}#page-gestao .surgery-card-details>.management-info:nth-child(2n){border-right:0}#page-gestao .surgery-card-details>.management-info-procedure{grid-column:span 2}#page-gestao .surgery-card-details>.management-info-return-group{border-right:0}#page-gestao .surgery-card-header{align-items:flex-start;flex-direction:column}#page-gestao .surgery-card-appointment{width:100%;justify-content:flex-end}}
+@media(max-width:430px){#page-gestao .surgery-card-details{grid-template-columns:minmax(0,1fr)}#page-gestao .surgery-card-details>.management-info,#page-gestao .surgery-card-details>.management-info:nth-child(n){padding:0 3px 6px;border-right:0;border-bottom:1px solid #e8eef0}#page-gestao .surgery-card-details>.management-info-procedure{grid-column:auto}#page-gestao .surgery-card-details>.management-info-return-group{border-bottom:0}#page-gestao .management-finance-item{padding:0 7px}}
 @media(max-width:1500px){.agenda-filters{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:700px){.agenda-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){.agenda-filters{grid-template-columns:1fr}}
