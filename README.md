@@ -1,4 +1,3 @@
-Warning: fs was declared with const; use let for reassignable variables.
 # OperaMeds
 
 Aplicação web para organizar cirurgias, agendas e cadastros de apoio no MongoDB.

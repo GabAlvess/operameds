@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+node_modules/
+npm-debug.log*
+.DS_Store
+
+# Arquivos locais de pacientes e referências visuais
+/*.pdf
+/Captura de Tela *.png
+/Ícone de checklist médico com swoosh colorido.png
+/Logo OperaMeds com Checklist Cirúrgico.png
+/Prancheta Médica com Swoosh Colorido.png

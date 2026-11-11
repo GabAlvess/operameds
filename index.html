@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#123b56" />
+    <meta name="description" content="OperaMeds | Organização Cirúrgica" />
+    <title>OperaMeds | Organização Cirúrgica</title>
+    <link rel="icon" type="image/png" href="/assets/operameds-icon.png?v=20261110-brand1" />
+    <link rel="apple-touch-icon" href="/assets/operameds-icon.png?v=20261110-brand1" />
+    <meta name="application-name" content="OperaMeds" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL,GRAD,opsz,wght@0..1,-25..200,20..48,100..700&amp;icon_names=account_balance_wallet,add,apartment,archive,badge,calendar_month,call,cancel,check_circle,chevron_left,chevron_right,close,dashboard,edit,event_note,healing,keyboard_arrow_down,local_hospital,location_city,logout,medical_information,medical_services,menu,more_horiz,notes,payments,percent,person,print,schedule,search,settings,share,task_alt,unarchive,update,view_list&amp;display=block" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css?v=20261110-brand2-authfix1" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" id="sidebar">
+        <a class="brand" href="#painel" aria-label="OperaMeds, Painel Inicial">
+          <img class="brand-logo" src="/assets/operameds-logo.png?v=20261110-brand1" alt="OperaMeds — Organização Cirúrgica" />
+        </a>
+
+        <div class="nav-caption">MENU PRINCIPAL</div>
+        <nav class="main-nav" aria-label="Navegação principal">
+          <a class="nav-link active" href="#painel" data-page="painel">
+            <span class="material-symbols" aria-hidden="true">dashboard</span>
+            <span>Painel Inicial</span>
+          </a>
+          <a class="nav-link" href="#agenda" data-page="agenda">
+            <span class="material-symbols" aria-hidden="true">calendar_month</span>
+            <span>Agenda Simplificada</span>
+          </a>
+          <a class="nav-link" href="#gestao" data-page="gestao">
+            <span class="material-symbols" aria-hidden="true">view_list</span>
+            <span>Gestão Completa</span>
+          </a>
+          <a class="nav-link" href="#configuracoes" data-page="configuracoes">
+            <span class="material-symbols" aria-hidden="true">settings</span>
+            <span>Configurações</span>
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <div class="creator-credit sidebar-creator-credit"><span>Desenvolvido por</span><a href="https://www.instagram.com/gabriela.alvx/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="instagram-dot" cx="17.5" cy="6.5" r="1"/></svg>Gabriela Alves</a><small>© 2026 OperaMeds</small></div>
+        </div>
+      </aside>
+
+      <div class="main-area">
+        <header class="topbar">
+          <button class="menu-toggle" id="menuToggle" aria-label="Abrir menu" aria-expanded="false">
+            <span class="material-symbols" aria-hidden="true">menu</span>
+          </button>
+          <div class="breadcrumb"><span>OperaMeds</span><span class="crumb-separator">/</span><strong id="crumbCurrent">Painel Inicial</strong></div>
+          <div class="topbar-right"><span class="secure-indicator"><i></i> Ambiente de organização</span><span class="avatar" id="currentEmployeeAvatar" aria-label="Funcionário conectado">OM</span><span class="current-employee" id="currentEmployeeName"></span><button class="text-button" id="logoutButton" type="button">Sair</button></div>
+        </header>
+
+        <main class="content" id="mainContent" tabindex="-1">
+          <section class="page active" id="page-painel" data-title="Painel Inicial">
+            <div class="page-heading">
+              <div><div class="eyebrow">BEM-VINDA AO OPERAMEDS</div><h1>Painel Inicial</h1><p>Organização cirúrgica em um só lugar.</p></div>
+            </div>
+            <div class="welcome-card">
+              <div class="welcome-copy"><span class="welcome-icon"><span class="material-symbols" aria-hidden="true">medical_services</span></span><div><h2>Seu espaço de organização</h2><p>As informações das cirurgias serão apresentadas aqui conforme forem cadastradas.</p></div></div>
+              <div class="welcome-decoration" aria-hidden="true"><span></span><span></span><span></span></div>
+            </div>
+            <div class="section-title"><div><h2>Visão geral</h2><p>Acompanhe os principais números da sua organização.</p></div></div>
+            <div class="stats-grid">
+              <article class="stat-card"><div class="stat-label"><span class="stat-icon blue"><span class="material-symbols" aria-hidden="true">calendar_month</span></span><span>Cirurgias agendadas</span></div><div class="stat-value" id="dashboardScheduled">0</div><div class="stat-note" id="dashboardScheduledNote">Cirurgias cadastradas</div></article>
+              <article class="stat-card"><div class="stat-label"><span class="stat-icon aqua"><span class="material-symbols" aria-hidden="true">check_circle</span></span><span>Confirmadas</span></div><div class="stat-value" id="dashboardConfirmed">0</div><div class="stat-note">Com status confirmado</div></article>
+              <article class="stat-card"><div class="stat-label"><span class="stat-icon green"><span class="material-symbols" aria-hidden="true">task_alt</span></span><span>Realizadas</span></div><div class="stat-value" id="dashboardCompleted">0</div><div class="stat-note">Com status realizado</div></article>
+              <article class="stat-card"><div class="stat-label"><span class="stat-icon amber"><span class="material-symbols" aria-hidden="true">schedule</span></span><span>Pendentes</span></div><div class="stat-value" id="dashboardPending">0</div><div class="stat-note">Aguardando realização</div></article>
+            </div>
+            <p class="dashboard-reservation-note" id="dashboardReservations">Nenhum horário reservado</p>
+            <div class="dashboard-section-title"><div><h2>Próximas cirurgias</h2><p>Os registros mais próximos da sua agenda.</p></div></div>
+            <div class="dashboard-upcoming" id="dashboardUpcoming"></div>
+            <div class="empty-panel" id="dashboardEmpty"><span class="empty-illustration"><span class="material-symbols" aria-hidden="true">event_note</span></span><div><strong>Nenhuma cirurgia cadastrada</strong><p>Quando houver registros, o resumo aparecerá nesta área.</p></div></div>
+            <div class="empty-panel dashboard-no-upcoming" id="dashboardNoUpcoming" hidden><span class="empty-illustration"><span class="material-symbols" aria-hidden="true">event_note</span></span><div><strong>Nenhuma cirurgia futura</strong><p>Os próximos horários cadastrados aparecerão aqui.</p></div></div>
+          </section>
+
+          <section class="page" id="page-agenda" data-title="Agenda Simplificada">
+            <div class="page-heading agenda-heading"><div><div class="eyebrow">ACOMPANHAMENTO</div><h1>Agenda Simplificada</h1><p>Cirurgias e agenda das médicas</p></div><div class="agenda-actions"><button class="button button-primary" id="agendaAddSurgeryButton" type="button"><span class="material-symbols" aria-hidden="true">add</span> Nova Cirurgia</button><button class="button button-secondary" id="agendaShareButton" type="button">Compartilhar Agenda</button><button class="button button-secondary" id="agendaPrintButton" type="button">Imprimir</button></div></div>
+            <div class="agenda-filters" aria-label="Filtros da agenda">
+              <div class="month-control"><div class="filter-field"><span>Mês</span><input id="agendaMonth" type="hidden" /><div class="month-picker-wrap"><button class="month-picker-button" id="agendaMonthToggle" type="button" aria-haspopup="dialog" aria-expanded="false"><span class="material-symbols" aria-hidden="true">calendar_month</span><span id="agendaMonthDisplay"></span><span class="material-symbols month-picker-chevron" aria-hidden="true">keyboard_arrow_down</span></button><div class="month-picker-popover" id="agendaMonthPopover" role="dialog" aria-label="Selecionar mês da agenda" hidden><div class="month-picker-popover-heading"><strong>Escolher mês</strong><select id="agendaMonthYear" aria-label="Ano"></select></div><div class="month-picker-grid" id="agendaMonthGrid"></div></div></div></div></div>
+              <label class="filter-field"><span>Médica</span><select id="agendaDoctorFilter"><option value="">Todas</option></select></label>
+              <label class="filter-field"><span>Cidade</span><select id="agendaCityFilter"><option value="">Todas</option></select></label>
+              <label class="filter-field"><span>Status</span><select id="agendaStatusFilter"><option value="">Todos</option><option value="reserved">Horário reservado</option></select></label>
+            </div>
+            <div class="agenda-result-line"><span class="agenda-result-count" id="agendaResultCount"></span></div>
+            <div class="agenda-table-card"><div class="agenda-table-wrap"><table class="agenda-table" id="agendaTable"><thead><tr><th>Data</th><th>Horário</th><th>Paciente</th><th>Médica / Cirurgião</th><th>Hospital</th><th>Cirurgia</th><th>Anestesista</th><th>Status</th></tr></thead><tbody id="agendaRows"></tbody></table></div><div class="agenda-empty" id="agendaEmpty" hidden><strong>Nenhuma cirurgia neste período</strong><span>Ajuste os filtros ou escolha outro mês para consultar a agenda.</span></div></div>
+          </section>
+
+          <section class="page" id="page-gestao" data-title="Gestão Cirúrgica">
+            <div class="page-heading surgery-management-heading">
+              <div><div class="eyebrow">ACOMPANHAMENTO</div><h1>Gestão Cirúrgica</h1><p>Visão rápida das cirurgias, valores e retornos.</p></div>
+              <button class="button button-primary" id="addSurgeryButton" type="button"><span class="material-symbols" aria-hidden="true">add</span> Nova Cirurgia</button>
+            </div>
+            <div class="management-filters" aria-label="Filtros da gestão cirúrgica">
+              <div class="filter-field"><span>Mês/Ano</span><input id="managementMonth" type="hidden" /><div class="month-picker-wrap"><button class="month-picker-button" id="managementMonthToggle" type="button" aria-haspopup="dialog" aria-expanded="false"><span class="material-symbols" aria-hidden="true">calendar_month</span><span id="managementMonthDisplay"></span><span class="material-symbols month-picker-chevron" aria-hidden="true">keyboard_arrow_down</span></button><div class="month-picker-popover" id="managementMonthPopover" role="dialog" aria-label="Selecionar mês da gestão" hidden><div class="month-picker-popover-heading"><strong>Escolher mês</strong><select id="managementMonthYear" aria-label="Ano"></select></div><div class="month-picker-grid" id="managementMonthGrid"></div></div></div></div>
+              <label class="filter-field"><span>Médica</span><select id="managementDoctorFilter"><option value="">Todas as médicas</option></select></label>
+              <label class="filter-field"><span>Cidade</span><select id="managementCityFilter"><option value="">Todas as cidades</option></select></label>
+              <label class="filter-field"><span>Status</span><select id="managementStatusFilter"><option value="">Todos os status</option><option value="reserved">Horário reservado</option></select></label>
+              <label class="filter-field management-search"><span>Pesquisar paciente</span><input id="managementPatientSearch" type="search" placeholder="Buscar paciente…" autocomplete="off" /></label>
+            </div>
+            <div class="management-summary" aria-label="Resumo do período">
+              <article class="summary-card summary-surgeries"><span class="material-symbols summary-icon" aria-hidden="true">medical_information</span><div><span>Cirurgias do período</span><strong id="managementSurgeryCount">0</strong></div></article>
+              <article class="summary-card summary-total"><span class="material-symbols summary-icon" aria-hidden="true">payments</span><div><span>Valor total</span><strong id="managementTotalValue">—</strong></div></article>
+              <article class="summary-card summary-pending"><span class="material-symbols summary-icon" aria-hidden="true">account_balance_wallet</span><div><span>Falta receber</span><strong id="managementPendingValue">—</strong></div></article>
+            </div>
+            <div class="management-list-heading"><h2 id="managementPeriodTitle">Cirurgias</h2><span id="managementResultCount">0 cirurgias encontradas</span></div>
+            <div class="surgery-cards" id="surgeryCards"></div>
+            <div class="management-empty" id="surgeryEmpty" hidden><strong>Nenhuma cirurgia encontrada</strong><span>Não há registros para este período ou para os filtros selecionados.</span></div>
+          </section>
+
+          <section class="page" id="page-configuracoes" data-title="Configurações">
+            <div class="page-heading"><div><div class="eyebrow">SISTEMA</div><h1>Configurações</h1><p>Gerencie as informações de apoio do OperaMeds.</p></div></div>
+            <div class="settings-tabs" role="tablist" aria-label="Categorias de configuração">
+              <button class="settings-tab active" type="button" role="tab" aria-selected="true" aria-controls="settings-doctors" data-settings-tab="doctors">Médicas / Cirurgiões</button>
+              <button class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-budgeters" data-settings-tab="budgeters">Orçamentistas</button>
+              <button class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-employees" data-settings-tab="employees">Funcionários</button>
+              <button class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-statuses" data-settings-tab="statuses">Status</button>
+              <button class="settings-tab" type="button" role="tab" aria-selected="false" aria-controls="settings-commissions" data-settings-tab="commissions">Comissões</button>
+            </div>
+            <div class="settings-panels">
+              <section class="settings-panel active" id="settings-doctors" role="tabpanel" data-settings-panel="doctors"><div class="list-heading"><div><h2>Médicas / Cirurgiões</h2><p>Profissionais disponíveis para selecionar nas cirurgias.</p></div><button class="button button-primary add-option" data-option-type="doctors" type="button"><span class="material-symbols" aria-hidden="true">add</span> Adicionar</button></div><div class="option-list" data-option-list="doctors"></div><details class="settings-extra"><summary>Gerenciar cidades</summary><div class="list-heading"><div><h2>Cidades</h2><p>Cidades disponíveis para os registros cirúrgicos.</p></div><button class="button button-primary add-option" data-option-type="cities" type="button"><span class="material-symbols" aria-hidden="true">add</span> Adicionar</button></div><div class="option-list" data-option-list="cities"></div></details><details class="settings-extra"><summary>Procedimentos arquivados</summary><div class="archived-surgeries-list" id="archivedSurgeriesList"></div></details></section>
+              <section class="settings-panel" id="settings-budgeters" role="tabpanel" data-settings-panel="budgeters" hidden><div class="list-heading"><div><h2>Orçamentistas</h2><p>Responsáveis vinculados às cirurgias e às comissões.</p></div><button class="button button-primary" id="addBudgeterButton" type="button"><span class="material-symbols" aria-hidden="true">add</span> Adicionar</button></div><div class="option-list" id="budgeterList"></div></section>
+              <section class="settings-panel" id="settings-employees" role="tabpanel" data-settings-panel="employees" hidden><div class="list-heading"><div><h2>Funcionários</h2><p>Usuários autorizados a acessar o OperaMeds.</p></div><button class="button button-primary" id="addEmployeeButton" type="button"><span class="material-symbols" aria-hidden="true">add</span> Novo Funcionário</button></div><div class="option-list" id="employeeList"></div></section>
+              <section class="settings-panel" id="settings-statuses" role="tabpanel" data-settings-panel="statuses" hidden><div class="list-heading"><div><h2>Status</h2><p>Defina os status e suas cores de identificação.</p></div><button class="button button-primary add-option" data-option-type="statuses" type="button"><span class="material-symbols" aria-hidden="true">add</span> Adicionar</button></div><div class="option-list" data-option-list="statuses"></div></section>
+              <section class="settings-panel" id="settings-commissions" role="tabpanel" data-settings-panel="commissions" hidden>
+                <div class="list-heading commission-heading"><div><h2>Comissões</h2><p>Somente cirurgias realizadas e vinculadas a um orçamentista são elegíveis. O cálculo usa 2% do valor total da cirurgia.</p></div></div>
+                <div class="commission-filters"><label class="form-field"><span>Mês/Ano</span><input id="commissionsMonth" type="hidden" /><div class="month-picker-wrap"><button class="month-picker-button" id="commissionsMonthToggle" type="button" aria-haspopup="dialog" aria-expanded="false"><span class="material-symbols" aria-hidden="true">calendar_month</span><span id="commissionsMonthDisplay"></span><span class="material-symbols month-picker-chevron" aria-hidden="true">keyboard_arrow_down</span></button><div class="month-picker-popover" id="commissionsMonthPopover" role="dialog" aria-label="Selecionar mês das comissões" hidden><div class="month-picker-popover-heading"><strong>Escolher mês</strong><select id="commissionsMonthYear" aria-label="Ano"></select></div><div class="month-picker-grid" id="commissionsMonthGrid"></div></div></div></label><label class="form-field"><span>Orçamentista</span><select id="commissionEmployeeFilter"><option value="">Todos</option></select></label><label class="form-field"><span>Situação</span><select id="commissionPaymentFilter"><option value="">Todas</option><option value="pending-rule">Aguardando percentual</option></select></label></div>
+                <div class="commission-summary"><article><span>Comissões calculadas</span><strong id="commissionTotal">R$ 0,00</strong><small>2% das cirurgias realizadas</small></article><article><span>Comissões pagas</span><strong id="commissionPaid">R$ 0,00</strong><small>Pagamentos ainda não são registrados no módulo</small></article><article><span>Comissões pendentes</span><strong id="commissionPending">R$ 0,00</strong><small>Total calculado menos pagamentos registrados</small></article></div>
+                <div id="commissionPeopleList" class="commission-people-list"></div>
+              </section>
+            </div>
+          </section>
+          <footer class="app-footer"><span>OperaMeds <span class="footer-dot">•</span> Organização Cirúrgica</span><span>Organização simples, cuidado em cada detalhe.</span></footer>
+        </main>
+      </div>
+      <div class="sidebar-scrim" id="sidebarScrim"></div>
+    </div>
+    <div class="app-toast" id="appToast" role="status" aria-live="polite"></div>
+    <dialog class="app-dialog" id="optionDialog" aria-labelledby="optionDialogTitle">
+      <form id="optionForm" method="dialog">
+        <div class="dialog-heading"><div><div class="eyebrow">CONFIGURAÇÕES</div><h2 id="optionDialogTitle">Adicionar item</h2></div><button class="dialog-close" type="button" data-close-dialog="optionDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div>
+        <label class="form-field"><span>Nome</span><input name="name" maxlength="120" required autocomplete="off" /></label>
+        <label class="form-field color-field" id="statusColorField"><span>Cor do status</span><input name="color" type="color" value="#18aaa7" /></label>
+        <label class="check-field" id="statusCommissionField" hidden><input name="commissionEligible" type="checkbox" /><span>Considerar este status como “Realizada” para comissões</span></label>
+        <label class="check-field"><input name="active" type="checkbox" checked /><span>Ativo e disponível para novos cadastros</span></label>
+        <div class="form-message" id="optionFormMessage" role="status"></div>
+        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="optionDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar</button></div>
+      </form>
+    </dialog>
+    <dialog class="app-dialog" id="surgeryDialog" aria-labelledby="surgeryDialogTitle">
+      <form id="surgeryForm" method="dialog">
+        <div class="dialog-heading"><div><div class="eyebrow">REGISTRO</div><h2 id="surgeryDialogTitle">Nova Cirurgia</h2></div><button class="dialog-close" type="button" data-close-dialog="surgeryDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div>
+        <label class="check-field reserve-toggle" id="reserveToggleField"><input name="isReserved" type="checkbox" /><span>Reservar horário sem paciente</span></label>
+        <div id="convertReservationNotice" class="reservation-convert" hidden><span>Este registro é um horário reservado e não aparece na Gestão Cirúrgica.</span><button class="button button-secondary" id="convertReservationButton" type="button">Converter em cirurgia</button></div>
+        <section class="surgery-form-section">
+          <div class="surgery-form-section-heading"><h3>Agendamento e Paciente</h3></div>
+          <div id="surgeryPatientFields" class="surgery-form-grid">
+            <label class="form-field span-3"><span>Data</span><input name="date" type="date" required /></label>
+            <label class="form-field span-3"><span>Horário</span><input name="time" type="time" required /></label>
+            <label class="form-field span-6 patient-only"><span>Paciente</span><input name="patient" maxlength="160" autocomplete="off" required /></label>
+            <label class="form-field span-4 patient-only"><span>Telefone</span><input name="phone" type="tel" maxlength="40" autocomplete="tel" /></label>
+            <label class="form-field span-4 patient-only"><span>Data da consulta</span><input name="consultationDate" type="date" /></label>
+            <label class="form-field span-4 patient-only"><span>Orçamentista</span><select name="employeeId"><option value="">Não selecionado</option></select><input name="employeeName" type="hidden" /></label>
+          </div>
+          <div id="reservationFields" hidden><label class="form-field"><span>Nome / motivo do horário (opcional)</span><input name="reservationName" maxlength="160" placeholder="Ex.: Consultório" autocomplete="off" /></label></div>
+        </section>
+        <section class="surgery-form-section">
+          <div class="surgery-form-section-heading"><h3>Cirurgia e Financeiro</h3></div>
+          <div class="surgery-form-grid">
+            <label class="form-field span-4" id="surgeryHospitalField"><span>Hospital</span><input name="hospitalName" maxlength="160" autocomplete="off" required /></label>
+            <label class="form-field span-4"><span>Médico</span><select name="doctorId" required></select></label>
+            <label class="form-field span-4"><span>Anestesista</span><input name="anesthetist" maxlength="160" autocomplete="off" /></label>
+          </div>
+          <div id="surgeryDetailFields">
+            <div class="surgery-form-grid">
+              <label class="form-field span-12"><span>Cirurgia / Procedimento</span><input name="procedure" maxlength="160" autocomplete="off" required /></label>
+            </div>
+            <div class="surgery-form-grid surgery-finance-grid">
+              <label class="form-field"><span>Status</span><select name="statusId" required></select></label>
+              <label class="form-field"><span>Valor Total (R$)</span><input name="totalAmount" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+              <label class="form-field"><span>Sinal Pago (R$)</span><input name="depositPaid" type="number" min="0" step="0.01" inputmode="decimal" /></label>
+              <label class="form-field"><span>Falta Pagar</span><input name="pendingAmount" type="text" readonly /></label>
+              <label class="form-field"><span>Comissão 2%</span><input name="commissionAmount" type="text" readonly /></label>
+            </div>
+            <div class="surgery-form-grid">
+              <label class="form-field span-3"><span>Data Retorno</span><input name="returnDate" type="date" /></label>
+              <label class="form-field span-5"><span>Tipo Retorno</span><input name="returnType" maxlength="120" autocomplete="off" /></label>
+              <label class="form-field span-4"><span>Cidade</span><select name="cityId"></select></label>
+              <label class="form-field span-12"><span>Observações</span><textarea name="observations" maxlength="2000" rows="3"></textarea></label>
+            </div>
+          </div>
+        </section>
+        <div class="form-message" id="surgeryFormMessage" role="status"></div>
+        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="surgeryDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Cirurgia</button></div>
+      </form>
+    </dialog>
+    <dialog class="app-dialog share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle"><div class="share-dialog-inner"><div class="dialog-heading"><div><div class="eyebrow">PRÉVIA PARA COMPARTILHAMENTO</div><h2 id="shareDialogTitle">Agenda das médicas</h2><p class="share-privacy-note">Esta versão não inclui identificação de pacientes, anestesista nem dados administrativos.</p></div><button class="dialog-close" type="button" data-close-dialog="shareDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><div id="shareAgendaContent"></div><div class="dialog-actions share-actions"><button class="button button-secondary" type="button" data-close-dialog="shareDialog">Fechar prévia</button><button class="button button-primary" id="sharePrintButton" type="button">Imprimir / Salvar PDF</button></div></div></dialog>
+    <section class="auth-gate" id="authGate" aria-label="Acesso ao OperaMeds"><form class="auth-card" id="authForm" novalidate><img class="auth-logo" src="/assets/operameds-logo.png?v=20261110-brand1" alt="Logomarca OperaMeds — Organização Cirúrgica" /><label class="form-field"><span>Nome de usuário</span><input name="username" minlength="3" maxlength="40" autocomplete="username" required /></label><label class="form-field"><span>Senha (4 dígitos)</span><input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" required /></label><div class="form-message" id="authMessage" role="status" aria-live="polite"></div><button class="button button-primary auth-submit" type="submit">Entrar</button><div class="creator-credit auth-creator-credit"><span>Desenvolvido por</span><a href="https://www.instagram.com/gabriela.alvx/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="instagram-dot" cx="17.5" cy="6.5" r="1"/></svg>Gabriela Alves</a><small>© 2026 OperaMeds</small></div></form></section>
+    <dialog class="app-dialog" id="employeeDialog" aria-labelledby="employeeDialogTitle"><form id="employeeForm" method="dialog"><div class="dialog-heading"><div><div class="eyebrow">ACESSO AO SISTEMA</div><h2 id="employeeDialogTitle">Novo funcionário</h2></div><button class="dialog-close" type="button" data-close-dialog="employeeDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><label class="form-field"><span>Nome</span><input name="name" maxlength="120" required autocomplete="name" /></label><label class="form-field"><span>Nome de usuário</span><input name="username" maxlength="40" required autocomplete="username" /></label><label class="form-field"><span>Senha (4 dígitos)</span><input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" /><small class="employee-pin-hint" id="employeePinHint">Exatamente 4 dígitos numéricos.</small></label><label class="form-field" id="employeeRoleField"><span>Tipo de acesso</span><select name="role"><option value="user">Usuário</option><option value="admin">Administrador</option></select></label><label class="check-field" id="employeeActiveField"><input name="active" type="checkbox" checked /><span>Ativo</span></label><div class="form-message" id="employeeFormMessage" role="status"></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="employeeDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Funcionário</button></div></form></dialog>
+    <dialog class="app-dialog" id="budgeterDialog" aria-labelledby="budgeterDialogTitle"><form id="budgeterForm" method="dialog"><div class="dialog-heading"><div><div class="eyebrow">CADASTRO INTERNO</div><h2 id="budgeterDialogTitle">Adicionar orçamentista</h2></div><button class="dialog-close" type="button" data-close-dialog="budgeterDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><label class="form-field"><span>Nome</span><input name="name" maxlength="120" required autocomplete="off" /></label><label class="check-field"><input name="active" type="checkbox" checked /><span>Ativo</span></label><div class="form-message" id="budgeterFormMessage" role="status"></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="budgeterDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Orçamentista</button></div></form></dialog>
+    <dialog class="app-dialog archive-confirm-dialog" id="archiveConfirmDialog" aria-labelledby="archiveConfirmTitle"><div><div class="dialog-heading"><div><div class="eyebrow">PROCEDIMENTO</div><h2 id="archiveConfirmTitle">Arquivar procedimento?</h2><p>O registro <strong id="archiveConfirmName">selecionado</strong> sairá da Agenda e da Gestão. Você poderá restaurá-lo em Configurações.</p></div><button class="dialog-close" type="button" data-close-dialog="archiveConfirmDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="archiveConfirmDialog">Cancelar</button><button class="button button-danger" id="archiveConfirmButton" type="button"><span class="material-symbols" aria-hidden="true">archive</span> Arquivar procedimento</button></div></div></dialog>
+    <script src="app.js?v=20261110-brand2-authfix1"></script>
+  </body>
+</html>
