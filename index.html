@@ -11,7 +11,7 @@
     <meta name="application-name" content="OperaMeds" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL,GRAD,opsz,wght@0..1,-25..200,20..48,100..700&amp;icon_names=account_balance_wallet,add,apartment,archive,badge,calendar_month,call,cancel,check_circle,chevron_left,chevron_right,close,dashboard,edit,event_note,healing,keyboard_arrow_down,local_hospital,location_city,location_on,logout,medical_information,medical_services,menu,more_horiz,notes,payments,percent,person,print,schedule,search,settings,share,task_alt,unarchive,update,view_list&amp;display=block" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:FILL,GRAD,opsz,wght@0..1,-25..200,20..48,100..700&amp;icon_names=account_balance_wallet,add,apartment,archive,badge,calendar_month,call,cancel,check_circle,chevron_left,chevron_right,close,dashboard,edit,event_busy,event_note,healing,keyboard_arrow_down,local_hospital,location_city,location_on,logout,medical_information,medical_services,menu,more_horiz,notes,payments,percent,person,print,schedule,search,settings,share,task_alt,unarchive,update,view_list&amp;display=block" rel="stylesheet" />
     <link rel="stylesheet" href="styles.css?v=20261110-brand2-authfix1" />
   </head>
   <body>
@@ -87,7 +87,7 @@
               <label class="filter-field"><span>Status</span><select id="agendaStatusFilter"><option value="">Todos</option><option value="reserved">Horário reservado</option></select></label>
             </div>
             <div class="agenda-result-line"><span class="agenda-result-count" id="agendaResultCount"></span></div>
-            <div class="agenda-table-card"><div class="agenda-table-wrap"><table class="agenda-table" id="agendaTable"><thead><tr><th>Data</th><th>Horário</th><th>Paciente</th><th>Médica / Cirurgião</th><th>Hospital</th><th>Cirurgia</th><th>Anestesista</th><th>Status</th></tr></thead><tbody id="agendaRows"></tbody></table></div><div class="agenda-empty" id="agendaEmpty" hidden><strong>Nenhuma cirurgia neste período</strong><span>Ajuste os filtros ou escolha outro mês para consultar a agenda.</span></div></div>
+            <div class="agenda-table-card"><div class="agenda-table-wrap"><table class="agenda-table" id="agendaTable"><thead><tr><th>Data</th><th>Horário</th><th>Paciente / Motivo</th><th>Médica / Cirurgião</th><th>Hospital</th><th>Cirurgia</th><th>Anestesista</th><th>Status / Tipo</th></tr></thead><tbody id="agendaRows"></tbody></table></div><div class="agenda-empty" id="agendaEmpty" hidden><strong>Nenhum horário encontrado neste período</strong><span>Ajuste os filtros ou escolha outro mês para consultar a agenda.</span></div></div>
           </section>
 
           <section class="page" id="page-gestao" data-title="Gestão Cirúrgica">
@@ -154,9 +154,9 @@
     <dialog class="app-dialog" id="surgeryDialog" aria-labelledby="surgeryDialogTitle">
       <form id="surgeryForm" method="dialog">
         <div class="dialog-heading"><div><div class="eyebrow">REGISTRO</div><h2 id="surgeryDialogTitle">Nova Cirurgia</h2></div><button class="dialog-close" type="button" data-close-dialog="surgeryDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div>
-        <label class="check-field reserve-toggle" id="reserveToggleField"><input name="isReserved" type="checkbox" /><span>Reservar horário sem paciente</span></label>
+        <label class="check-field reserve-toggle" id="reserveToggleField"><input name="isAgendaBlock" type="checkbox" /><span>Bloqueio de Agenda</span></label>
         <div id="convertReservationNotice" class="reservation-convert" hidden><span>Este registro é um horário reservado e não aparece na Gestão Cirúrgica.</span><button class="button button-secondary" id="convertReservationButton" type="button">Converter em cirurgia</button></div>
-        <section class="surgery-form-section">
+        <section class="surgery-form-section" id="surgeryPatientSection">
           <div class="surgery-form-section-heading"><h3>Agendamento e Paciente</h3></div>
           <div id="surgeryPatientFields" class="surgery-form-grid">
             <label class="form-field span-3"><span>Data</span><input name="date" type="date" /></label>
@@ -166,13 +166,13 @@
             <label class="form-field span-4 patient-only"><span>Data da consulta</span><input name="consultationDate" type="date" /></label>
             <label class="form-field span-4 patient-only"><span>Orçamentista</span><select name="employeeId"><option value="">Não selecionado</option></select><input name="employeeName" type="hidden" /></label>
           </div>
-          <div id="reservationFields" hidden><label class="form-field"><span>Nome / motivo do horário (opcional)</span><input name="reservationName" maxlength="160" placeholder="Ex.: Consultório" autocomplete="off" /></label></div>
+          <div id="agendaBlockFields" class="surgery-form-grid" hidden><div id="blockDoctorSlot" class="span-6"></div><label class="form-field span-6"><span>Nome / Motivo do horário</span><input name="reservationName" maxlength="160" placeholder="Ex.: Consultório" autocomplete="off" /></label></div>
         </section>
-        <section class="surgery-form-section">
+        <section class="surgery-form-section" id="surgeryProcedureSection">
           <div class="surgery-form-section-heading"><h3>Cirurgia e Financeiro</h3></div>
           <div class="surgery-form-grid">
             <label class="form-field span-4" id="surgeryHospitalField"><span>Hospital</span><input name="hospitalName" maxlength="160" autocomplete="off" /></label>
-            <label class="form-field span-4"><span>Médico</span><select name="doctorId"></select></label>
+            <div id="normalDoctorSlot" class="span-4"><label id="doctorFormField" class="form-field"><span>Médico</span><select name="doctorId"></select></label></div>
             <label class="form-field span-4"><span>Anestesista</span><input name="anesthetist" maxlength="160" autocomplete="off" /></label>
           </div>
           <div id="surgeryDetailFields">
@@ -186,7 +186,7 @@
               <label class="form-field"><span>Falta Pagar</span><input name="pendingAmount" type="text" readonly /></label>
               <label class="form-field"><span>Comissão 2%</span><input name="commissionAmount" type="text" readonly /></label>
             </div>
-            <div class="surgery-form-grid">
+            <div class="surgery-form-grid surgery-return-grid">
               <label class="form-field span-3"><span>Data Retorno</span><input name="returnDate" type="date" /></label>
               <label class="form-field span-5"><span>Tipo Retorno</span><input name="returnType" maxlength="120" autocomplete="off" /></label>
               <label class="form-field span-4"><span>Cidade</span><select name="cityId"></select></label>
@@ -195,9 +195,11 @@
           </div>
         </section>
         <div class="form-message" id="surgeryFormMessage" role="status"></div>
-        <div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="surgeryDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Cirurgia</button></div>
+        <div class="dialog-actions"><button class="button button-danger" id="deleteAgendaBlockButton" type="button" hidden>Excluir Bloqueio</button><button class="button button-secondary" type="button" data-close-dialog="surgeryDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Cirurgia</button></div>
       </form>
     </dialog>
+    <dialog class="app-dialog archive-confirm-dialog" id="unsavedSurgeryDialog" aria-labelledby="unsavedSurgeryTitle"><div><div class="dialog-heading"><div><div class="eyebrow">ALTERAÇÕES NÃO SALVAS</div><h2 id="unsavedSurgeryTitle">Descartar as informações?</h2><p>Existem alterações não salvas. Deseja realmente sair e descartar as informações?</p></div></div><div class="dialog-actions"><button class="button button-secondary" id="continueSurgeryEditingButton" type="button">Continuar preenchendo</button><button class="button button-danger" id="discardSurgeryChangesButton" type="button">Descartar alterações</button></div></div></dialog>
+    <dialog class="app-dialog archive-confirm-dialog" id="deleteAgendaBlockDialog" aria-labelledby="deleteAgendaBlockTitle"><div><div class="dialog-heading"><div><div class="eyebrow">BLOQUEIO DE AGENDA</div><h2 id="deleteAgendaBlockTitle">Excluir este bloqueio?</h2><p>Esta ação removerá o bloqueio da Agenda Simplificada.</p></div><button class="dialog-close" type="button" data-close-dialog="deleteAgendaBlockDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="deleteAgendaBlockDialog">Cancelar</button><button class="button button-danger" id="confirmDeleteAgendaBlockButton" type="button">Excluir Bloqueio</button></div></div></dialog>
     <dialog class="app-dialog share-dialog" id="shareDialog" aria-labelledby="shareDialogTitle"><div class="share-dialog-inner"><div class="dialog-heading"><div><div class="eyebrow">PRÉVIA PARA COMPARTILHAMENTO</div><h2 id="shareDialogTitle">Agenda das médicas</h2><p class="share-privacy-note">Esta versão não inclui identificação de pacientes, anestesista nem dados administrativos.</p></div><button class="dialog-close" type="button" data-close-dialog="shareDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><div id="shareAgendaContent"></div><div class="dialog-actions share-actions"><button class="button button-secondary" type="button" data-close-dialog="shareDialog">Fechar prévia</button><button class="button button-primary" id="sharePrintButton" type="button">Imprimir / Salvar PDF</button></div></div></dialog>
     <section class="auth-gate" id="authGate" aria-label="Acesso ao OperaMeds"><form class="auth-card" id="authForm" novalidate><img class="auth-logo" src="/assets/operameds-logo.png?v=20261110-brand1" alt="Logomarca OperaMeds — Organização Cirúrgica" /><label class="form-field"><span>Nome de usuário</span><input name="username" minlength="3" maxlength="40" autocomplete="username" required /></label><label class="form-field"><span>Senha (4 dígitos)</span><input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" minlength="4" maxlength="4" autocomplete="current-password" required /></label><div class="form-message" id="authMessage" role="status" aria-live="polite"></div><button class="button button-primary auth-submit" type="submit">Entrar</button><div class="creator-credit auth-creator-credit"><span>Desenvolvido por</span><a href="https://www.instagram.com/gabriela.alvx/" target="_blank" rel="noopener noreferrer"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle class="instagram-dot" cx="17.5" cy="6.5" r="1"/></svg>Gabriela Alves</a><small>© 2026 OperaMeds</small></div></form></section>
     <dialog class="app-dialog" id="employeeDialog" aria-labelledby="employeeDialogTitle"><form id="employeeForm" method="dialog"><div class="dialog-heading"><div><div class="eyebrow">ACESSO AO SISTEMA</div><h2 id="employeeDialogTitle">Novo funcionário</h2></div><button class="dialog-close" type="button" data-close-dialog="employeeDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><label class="form-field"><span>Nome</span><input name="name" maxlength="120" required autocomplete="name" /></label><label class="form-field"><span>Nome de usuário</span><input name="username" maxlength="40" required autocomplete="username" /></label><label class="form-field"><span>Senha (4 dígitos)</span><input name="pin" type="password" inputmode="numeric" pattern="[0-9]{4}" maxlength="4" autocomplete="new-password" /><small class="employee-pin-hint" id="employeePinHint">Exatamente 4 dígitos numéricos.</small></label><label class="form-field" id="employeeRoleField"><span>Tipo de acesso</span><select name="role"><option value="user">Usuário</option><option value="admin">Administrador</option></select></label><label class="check-field" id="employeeActiveField"><input name="active" type="checkbox" checked /><span>Ativo</span></label><div class="form-message" id="employeeFormMessage" role="status"></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="employeeDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Funcionário</button></div></form></dialog>

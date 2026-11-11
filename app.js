@@ -19,6 +19,8 @@ let editingBudgeter = null;
 let editingSurgery = null;
 let convertingReservation = false;
 let pendingArchive = null;
+let pendingAgendaBlockDelete = null;
+let surgeryFormBaseline = null;
 let toastTimer;
 const apiBaseUrl = String(window.OPERAMEDS_API_BASE_URL || '').replace(/\/+$/, '');
 
@@ -133,7 +135,7 @@ function normalizedStatusName(surgery) {
 }
 
 function commissionEligible(surgery) {
-  if (!surgery || surgery.isReserved || surgery.recordType === 'reservation') return false;
+  if (!surgery || surgery.isReserved || surgery.isAgendaBlock || surgery.recordType === 'reservation' || surgery.recordType === 'agenda_block') return false;
   return surgery.status?.commissionEligible === true || ['realizado', 'realizada'].includes(normalizedStatusName(surgery));
 }
 
@@ -145,7 +147,7 @@ function dashboardDateValue() {
 }
 
 function renderDashboard() {
-  const surgeriesOnly = surgeries.filter((surgery) => !surgery.isReserved);
+  const surgeriesOnly = surgeries.filter((surgery) => !surgery.isReserved && !surgery.isAgendaBlock && surgery.recordType !== 'agenda_block');
   const reservationCount = surgeries.filter((surgery) => surgery.isReserved).length;
   const confirmed = surgeriesOnly.filter((surgery) => normalizedStatusName(surgery).includes('confirm')).length;
   const completed = surgeriesOnly.filter((surgery) => normalizedStatusName(surgery).includes('realiz')).length;
@@ -493,6 +495,28 @@ async function confirmArchiveSurgery() {
   } catch (error) { showToast(error.message, 'error'); }
 }
 
+function requestDeleteAgendaBlock() {
+  if (!editingSurgery?.isAgendaBlock) return;
+  pendingAgendaBlockDelete = editingSurgery;
+  document.getElementById('deleteAgendaBlockDialog').showModal();
+}
+
+async function confirmDeleteAgendaBlock() {
+  if (!pendingAgendaBlockDelete) return;
+  const button = document.getElementById('confirmDeleteAgendaBlockButton');
+  button.disabled = true;
+  try {
+    await api('/api/surgeries/' + pendingAgendaBlockDelete.id, { method: 'DELETE', body: '{}' });
+    document.getElementById('deleteAgendaBlockDialog').close();
+    closeSurgeryDialogNow();
+    pendingAgendaBlockDelete = null;
+    editingSurgery = null;
+    await loadSurgeries();
+    showToast('Bloqueio excluído da agenda.');
+  } catch (error) { showToast(error.message, 'error'); }
+  finally { button.disabled = false; }
+}
+
 async function restoreSurgery(surgery) {
   try {
     await api('/api/surgeries/' + surgery.id + '/restore', { method: 'POST', body: '{}' });
@@ -673,20 +697,67 @@ function fillSelect(select, items, label, current = null, allowEmpty = false) {
 }
 
 function syncReservationFields() {
-  const reserved = document.querySelector('#surgeryForm [name="isReserved"]').checked;
-  document.getElementById('surgeryDetailFields').hidden = reserved;
-  document.querySelectorAll('#surgeryPatientFields .patient-only').forEach((field) => { field.hidden = reserved; });
-  document.getElementById('reservationFields').hidden = !reserved;
-  document.getElementById('surgeryHospitalField').hidden = reserved;
+  const form = document.getElementById('surgeryForm');
+  const blockMode = form.elements.isAgendaBlock.checked;
+  const legacyReservation = Boolean(editingSurgery?.isReserved && !editingSurgery?.isAgendaBlock && !convertingReservation);
+  const specialTime = blockMode || legacyReservation;
+  const doctorField = document.getElementById('doctorFormField');
+  document.getElementById(specialTime ? 'blockDoctorSlot' : 'normalDoctorSlot').append(doctorField);
+  const newBlockMode = blockMode && !legacyReservation;
+  form.classList.toggle('is-agenda-block', newBlockMode);
+  document.getElementById('surgeryDialog').classList.toggle('agenda-block-dialog', newBlockMode);
+  document.getElementById('surgeryDetailFields').hidden = specialTime;
+  document.querySelectorAll('#surgeryPatientFields .patient-only').forEach((field) => { field.hidden = specialTime; });
+  document.getElementById('agendaBlockFields').hidden = !specialTime;
+  document.getElementById('surgeryProcedureSection').hidden = newBlockMode || legacyReservation;
+  document.getElementById('surgeryPatientSection').querySelector('.surgery-form-section-heading h3').textContent = newBlockMode ? 'Bloqueio de Agenda' : legacyReservation ? 'Horário reservado antigo' : 'Agendamento e Paciente';
+  document.getElementById('surgeryHospitalField').hidden = specialTime;
   document.querySelector('#surgeryForm [name="hospitalName"]').required = false;
-  if (!reserved) document.querySelector('#surgeryForm [name="reservationName"]').value = '';
-  ['patient', 'procedure'].forEach((name) => { document.querySelector('#surgeryForm [name="' + name + '"]').required = !reserved; });
-  document.querySelector('#surgeryForm [name="statusId"]').required = !reserved;
+  if (!specialTime) form.elements.reservationName.value = '';
+  ['patient', 'procedure'].forEach((name) => { form.elements[name].required = !specialTime; });
+  form.elements.statusId.required = !specialTime;
+  form.elements.date.required = specialTime;
+  form.elements.time.required = specialTime;
+  form.elements.doctorId.required = specialTime;
+  form.elements.reservationName.required = blockMode && !legacyReservation;
   const convertNotice = document.getElementById('convertReservationNotice');
   const reserveToggle = document.getElementById('reserveToggleField');
-  const isExistingReservation = Boolean(editingSurgery?.isReserved);
+  const isExistingReservation = legacyReservation;
   if (convertNotice) convertNotice.hidden = !isExistingReservation || convertingReservation;
-  if (reserveToggle) reserveToggle.hidden = isExistingReservation;
+  if (reserveToggle) reserveToggle.hidden = Boolean(editingSurgery);
+  document.getElementById('surgeryDialogTitle').textContent = newBlockMode ? (editingSurgery ? 'Editar Bloqueio' : 'Bloqueio de Agenda') : legacyReservation ? 'Editar Horário Reservado' : editingSurgery ? 'Editar Cirurgia' : 'Nova Cirurgia';
+  document.querySelector('#surgeryForm [type="submit"]').textContent = legacyReservation ? 'Salvar Horário Reservado' : newBlockMode ? 'Salvar Bloqueio' : editingSurgery ? 'Salvar Alterações' : 'Salvar Cirurgia';
+  document.getElementById('deleteAgendaBlockButton').hidden = !editingSurgery?.isAgendaBlock;
+}
+
+function currentSurgeryFormState() {
+  return JSON.stringify([...new FormData(document.getElementById('surgeryForm')).entries()]);
+}
+
+function surgeryFormHasUnsavedChanges() {
+  return surgeryFormBaseline !== null && currentSurgeryFormState() !== surgeryFormBaseline;
+}
+
+function closeSurgeryDialogNow() {
+  delete document.getElementById('surgeryForm').dataset.saving;
+  surgeryFormBaseline = null;
+  document.getElementById('surgeryDialog').close();
+}
+
+function requestCloseSurgeryDialog() {
+  if (document.getElementById('surgeryForm').dataset.saving === 'true') return;
+  if (surgeryFormHasUnsavedChanges()) {
+    document.getElementById('unsavedSurgeryDialog').showModal();
+    return;
+  }
+  closeSurgeryDialogNow();
+}
+
+function discardSurgeryFormChanges() {
+  document.getElementById('unsavedSurgeryDialog').close();
+  closeSurgeryDialogNow();
+  editingSurgery = null;
+  convertingReservation = false;
 }
 
 function calculateSurgeryAmounts() {
@@ -719,7 +790,7 @@ function openSurgeryDialog(surgery = null) {
   form.elements.returnDate.value = surgery?.returnDate || '';
   form.elements.returnType.value = surgery?.returnType || '';
   form.elements.observations.value = surgery?.observations || '';
-  form.elements.isReserved.checked = surgery?.isReserved === true;
+  form.elements.isAgendaBlock.checked = surgery?.isAgendaBlock === true || surgery?.isReserved === true;
   fillSelect(form.elements.doctorId, optionsByType.doctors, 'Médica / Cirurgião', surgery?.doctor, true);
   const oldEmployeeName = normalizeEmployeeName(surgery?.employeeName || surgery?.employee?.name || '');
   const currentEmployeeOption = surgery?.employee || budgeters.find((item) => normalizeEmployeeName(item.name) === oldEmployeeName) || null;
@@ -735,6 +806,7 @@ function openSurgeryDialog(surgery = null) {
   setFormMessage(document.getElementById('surgeryFormMessage'), '');
   syncReservationFields();
   document.getElementById('surgeryDialog').showModal();
+  surgeryFormBaseline = currentSurgeryFormState();
 }
 
 async function openNewSurgeryDialog() {
@@ -750,7 +822,7 @@ function convertReservationToSurgery() {
   if (!editingSurgery?.isReserved) return;
   convertingReservation = true;
   const form = document.getElementById('surgeryForm');
-  form.elements.isReserved.checked = false;
+  form.elements.isAgendaBlock.checked = false;
   syncReservationFields();
   document.getElementById('surgeryFormMessage').scrollIntoView({ block: 'nearest' });
   form.elements.patient.focus();
@@ -760,30 +832,34 @@ async function saveSurgery(event) {
   event.preventDefault();
   const form = event.currentTarget;
   const body = Object.fromEntries(new FormData(form).entries());
-  body.isReserved = form.elements.isReserved.checked;
+  const legacyReservation = Boolean(editingSurgery?.isReserved && !editingSurgery?.isAgendaBlock && !convertingReservation);
+  body.isAgendaBlock = form.elements.isAgendaBlock.checked && !legacyReservation;
+  body.isReserved = legacyReservation;
   body.convertReservation = convertingReservation;
   delete body.pendingAmount;
   delete body.commissionAmount;
   const message = document.getElementById('surgeryFormMessage');
   const submit = form.querySelector('[type="submit"]');
-  const missingReservationFields = body.isReserved && (!body.date || !body.time || !body.doctorId);
-  const missingSurgeryFields = !body.isReserved && (!body.patient || !body.procedure || !body.statusId);
+  const specialTime = body.isReserved || body.isAgendaBlock;
+  const missingReservationFields = specialTime && (!body.date || !body.time || !body.doctorId || (body.isAgendaBlock && !body.reservationName.trim()));
+  const missingSurgeryFields = !specialTime && (!body.patient || !body.procedure || !body.statusId);
   if (missingReservationFields || missingSurgeryFields) {
-    setFormMessage(message, body.isReserved ? 'Informe data, horário e médica para reservar.' : 'Preencha paciente, cirurgia e status. Data, horário, médica e hospital podem ficar em branco.');
+    setFormMessage(message, body.isAgendaBlock ? 'Informe data, horário, médico e nome ou motivo do bloqueio.' : body.isReserved ? 'Informe data, horário e médica para a reserva.' : 'Preencha paciente, cirurgia e status. Data, horário, médica e hospital podem ficar em branco.');
     return;
   }
   submit.disabled = true;
+  form.dataset.saving = 'true';
   setFormMessage(message, 'Salvando…', 'info');
   try {
     await api(editingSurgery ? '/api/surgeries/' + editingSurgery.id : '/api/surgeries', {
       method: editingSurgery ? 'PUT' : 'POST',
       body: JSON.stringify(body),
     });
-    document.getElementById('surgeryDialog').close();
+    closeSurgeryDialogNow();
     await loadSurgeries();
-    showToast(convertingReservation ? 'Horário convertido em cirurgia.' : editingSurgery ? 'Cirurgia atualizada com sucesso.' : body.isReserved ? 'Horário reservado com sucesso.' : 'Cirurgia cadastrada com sucesso.');
+    showToast(convertingReservation ? 'Horário convertido em cirurgia.' : editingSurgery ? (body.isAgendaBlock ? 'Bloqueio atualizado.' : 'Cirurgia atualizada com sucesso.') : body.isAgendaBlock ? 'Bloqueio de agenda salvo.' : body.isReserved ? 'Horário reservado com sucesso.' : 'Cirurgia cadastrada com sucesso.');
   } catch (error) { setFormMessage(message, error.message); }
-  finally { submit.disabled = false; }
+  finally { submit.disabled = false; delete form.dataset.saving; }
 }
 
 function monthValue(date = new Date()) {
@@ -970,6 +1046,7 @@ function filteredAgenda() {
     if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
     if (city && surgery.cityId !== city) return false;
+    if (surgery.isAgendaBlock) return true;
     if (status === 'reserved' && !surgery.isReserved) return false;
     if (status && status !== 'reserved' && (surgery.isReserved || surgery.statusId !== status)) return false;
     return true;
@@ -1018,31 +1095,45 @@ function renderAgenda() {
       tbody.append(group);
     }
     const row = document.createElement('tr');
-    row.className = 'agenda-data-row' + (surgery.isReserved ? ' reserved-row' : '');
+    row.className = 'agenda-data-row' + (surgery.isAgendaBlock ? ' agenda-block-row' : surgery.isReserved ? ' reserved-row' : '');
     row.tabIndex = 0;
-    row.setAttribute('aria-label', (surgery.isReserved ? 'Horário reservado' : surgery.patient) + ', ' + dateLabel(surgery.date) + ', ' + (surgery.time || 'sem horário') + '. Clique para editar.');
+    row.setAttribute('aria-label', (surgery.isAgendaBlock ? 'Bloqueio de Agenda: ' + surgery.reservationName : surgery.isReserved ? 'Horário reservado' : surgery.patient) + ', ' + dateLabel(surgery.date) + ', ' + (surgery.time || 'sem horário') + '. Clique para editar.');
     row.addEventListener('click', () => openSurgeryFromRow(surgery));
     row.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSurgeryFromRow(surgery); }
     });
     appendCell(row, surgery.date ? dateLabel(surgery.date) : '—');
     appendCell(row, surgery.time);
-    appendCell(row, surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient, surgery.isReserved ? 'reserved-copy' : '');
+    appendCell(row, surgery.isAgendaBlock ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient, surgery.isReserved && !surgery.isAgendaBlock ? 'reserved-copy' : '');
     appendCell(row, surgery.doctor?.name);
     const hospitalCell = document.createElement('td');
     row.append(hospitalCell);
-    const hospitalName = document.createElement('strong');
-    hospitalName.textContent = surgery.hospital?.name || '—';
-    hospitalCell.append(hospitalName);
-    if (surgery.city?.name) {
+    if (!surgery.isAgendaBlock) {
+      const hospitalName = document.createElement('strong');
+      hospitalName.textContent = surgery.hospital?.name || '—';
+      hospitalCell.append(hospitalName);
+    }
+    if (!surgery.isAgendaBlock && surgery.city?.name) {
       const city = document.createElement('small');
       city.textContent = surgery.city.name;
       hospitalCell.append(city);
     }
-    appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
-    appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
+    if (surgery.isAgendaBlock) { row.append(document.createElement('td'), document.createElement('td')); }
+    else {
+      appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
+      appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
+    }
     const statusCell = document.createElement('td');
-    statusCell.append(makeStatusChip(surgery.status));
+    if (surgery.isAgendaBlock) {
+      const blockType = document.createElement('span');
+      blockType.className = 'agenda-block-type';
+      const icon = document.createElement('span');
+      icon.className = 'material-symbols';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = 'event_busy';
+      blockType.append(icon, document.createTextNode('Bloqueio de Agenda'));
+      statusCell.append(blockType);
+    } else statusCell.append(makeStatusChip(surgery.status));
     row.append(statusCell);
     tbody.append(row);
   });
@@ -1127,7 +1218,7 @@ function filteredManagementSurgeries() {
   const status = document.getElementById('managementStatusFilter').value;
   const patient = document.getElementById('managementPatientSearch').value.trim().toLocaleLowerCase('pt-BR');
   return surgeries.filter((surgery) => {
-    if (surgery.isReserved) return false;
+    if (surgery.isReserved || surgery.isAgendaBlock || surgery.recordType === 'agenda_block') return false;
     if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
     if (city && surgery.cityId !== city) return false;
@@ -1313,7 +1404,7 @@ function renderSharePreview() {
   table.className = 'share-table';
   const head = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Data', 'Horário', 'Médica / Cirurgião', 'Hospital', 'Cirurgia', 'Status'].forEach((label) => {
+  ['Data', 'Horário', 'Médica / Cirurgião', 'Hospital', 'Motivo / Cirurgia', 'Status / Tipo'].forEach((label) => {
     const th = document.createElement('th');
     th.textContent = label;
     headerRow.append(th);
@@ -1338,9 +1429,18 @@ function renderSharePreview() {
     appendCell(row, surgery.time);
     appendCell(row, surgery.doctor?.name);
     appendCell(row, surgery.hospital?.name);
-    appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
+    appendCell(row, surgery.isAgendaBlock ? surgery.reservationName : surgery.isReserved ? '—' : surgery.procedure);
     const statusCell = document.createElement('td');
-    statusCell.append(makeStatusChip(surgery.status));
+    if (surgery.isAgendaBlock) {
+      const blockType = document.createElement('span');
+      blockType.className = 'agenda-block-type';
+      const icon = document.createElement('span');
+      icon.className = 'material-symbols';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.textContent = 'event_busy';
+      blockType.append(icon, document.createTextNode('Bloqueio de Agenda'));
+      statusCell.append(blockType);
+    } else statusCell.append(makeStatusChip(surgery.status));
     row.append(statusCell);
     body.append(row);
   });
@@ -1427,13 +1527,27 @@ document.querySelectorAll('[data-settings-tab]').forEach((tab) => tab.addEventLi
   if (tab.dataset.settingsTab === 'commissions') Promise.all([loadSettings(), loadSurgeries()]).catch((error) => showToast(error.message, 'error'));
 }));
 document.querySelectorAll('.add-option').forEach((button) => button.addEventListener('click', () => openOptionDialog(button.dataset.optionType)));
-document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => document.getElementById(button.dataset.closeDialog).close()));
-document.querySelectorAll('.app-dialog').forEach((dialog) => dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); }));
+document.querySelectorAll('[data-close-dialog]').forEach((button) => button.addEventListener('click', () => {
+  if (button.dataset.closeDialog === 'surgeryDialog') requestCloseSurgeryDialog();
+  else document.getElementById(button.dataset.closeDialog).close();
+}));
+document.querySelectorAll('.app-dialog').forEach((dialog) => dialog.addEventListener('click', (event) => {
+  if (event.target !== dialog || dialog.id === 'surgeryDialog') return;
+  dialog.close();
+}));
+document.getElementById('surgeryDialog').addEventListener('cancel', (event) => {
+  event.preventDefault();
+  requestCloseSurgeryDialog();
+});
 document.getElementById('optionForm').addEventListener('submit', saveOption);
 document.getElementById('employeeForm').addEventListener('submit', saveEmployee);
 document.getElementById('budgeterForm').addEventListener('submit', saveBudgeter);
 document.getElementById('surgeryForm').addEventListener('submit', saveSurgery);
 document.getElementById('archiveConfirmButton').addEventListener('click', confirmArchiveSurgery);
+document.getElementById('deleteAgendaBlockButton').addEventListener('click', requestDeleteAgendaBlock);
+document.getElementById('confirmDeleteAgendaBlockButton').addEventListener('click', confirmDeleteAgendaBlock);
+document.getElementById('continueSurgeryEditingButton').addEventListener('click', () => document.getElementById('unsavedSurgeryDialog').close());
+document.getElementById('discardSurgeryChangesButton').addEventListener('click', discardSurgeryFormChanges);
 document.getElementById('convertReservationButton').addEventListener('click', convertReservationToSurgery);
 document.getElementById('authForm').addEventListener('submit', submitLogin);
 document.querySelector('#authForm [name="pin"]').addEventListener('input', (event) => {
@@ -1451,7 +1565,7 @@ document.getElementById('commissionsMonth').addEventListener('change', (event) =
 document.getElementById('commissionsMonth').value = monthValue();
 document.getElementById('addSurgeryButton').addEventListener('click', openNewSurgeryDialog);
 document.getElementById('agendaAddSurgeryButton').addEventListener('click', openNewSurgeryDialog);
-document.querySelector('#surgeryForm [name="isReserved"]').addEventListener('change', syncReservationFields);
+document.querySelector('#surgeryForm [name="isAgendaBlock"]').addEventListener('change', syncReservationFields);
 document.querySelector('#surgeryForm [name="employeeId"]').addEventListener('change', (event) => {
   const selected = budgeters.find((item) => item.id === event.currentTarget.value);
   document.querySelector('#surgeryForm [name="employeeName"]').value = selected?.name || '';

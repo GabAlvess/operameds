@@ -245,3 +245,19 @@
 @media(max-width:480px){.auth-logo,.auth-card .auth-logo{height:auto;max-height:84px}}
 .share-brand{margin:8px 0 3px;color:#167f85;font-size:10px;font-weight:700;letter-spacing:.2px}
 @media print{body.printing-agenda #page-agenda .agenda-heading:before{content:'OperaMeds · Organização Cirúrgica';display:block;margin:0 0 5px;color:#167f85;font-size:10px;font-weight:700;letter-spacing:.2px}}
+
+/* Bloqueios de Agenda */
+.agenda-data-row.agenda-block-row,.agenda-data-row.agenda-block-row:hover{background:#EDE4FF}
+.agenda-data-row.agenda-block-row td,.agenda-data-row.agenda-block-row:hover td{background:#EDE4FF!important;color:#59359A!important;border-color:#dccdf5}
+.agenda-data-row.agenda-block-row:focus{outline-color:#8e6dc4}
+.agenda-block-type{display:inline-flex;align-items:center;gap:6px;color:#59359A;font-size:10px;font-weight:700;white-space:nowrap}
+.agenda-block-type .material-symbols{font-size:17px;line-height:1}
+#surgeryDialog.agenda-block-dialog{width:min(560px,calc(100vw - 30px))}
+#surgeryProcedureSection[hidden],#agendaBlockFields[hidden]{display:none}
+#surgeryForm.is-agenda-block #surgeryPatientFields>.form-field.span-3{grid-column:span 6}
+#surgeryForm.is-agenda-block .dialog-actions #deleteAgendaBlockButton{margin-right:auto}
+@media(max-width:700px){#surgeryDialog.agenda-block-dialog{width:calc(100vw - 20px)}#surgeryForm.is-agenda-block #surgeryPatientFields>.form-field.span-3,#surgeryForm.is-agenda-block #agendaBlockFields>#blockDoctorSlot{grid-column:1/-1}}
+.surgery-return-grid{grid-template-columns:minmax(0,5fr) minmax(0,9fr) minmax(0,6fr)}
+.surgery-return-grid>.form-field:not(.span-12){grid-column:auto;min-width:0}
+.surgery-return-grid>.form-field.span-12{grid-column:1/-1}
+@media(max-width:700px){.surgery-return-grid{grid-template-columns:minmax(0,1fr)}.surgery-return-grid>.form-field{grid-column:1/-1}}

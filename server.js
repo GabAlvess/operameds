@@ -249,15 +249,24 @@ function rejectLogin(key) {
 
 async function validateSurgeryReferences(collections, values, previous = null) {
   const isReserved = values.isReserved === true;
+  const isAgendaBlock = values.isAgendaBlock === true;
   const result = {};
   const doctorId = typeof values.doctorId === 'string' ? values.doctorId : '';
-  if (!doctorId && isReserved) throw Object.assign(new Error('Selecione uma médica ou cirurgião para reservar o horário.'), { status: 400 });
+  if (!doctorId && (isReserved || isAgendaBlock)) throw Object.assign(new Error('Selecione uma médica ou cirurgião para o bloqueio.'), { status: 400 });
   if (doctorId) {
     if (!ObjectId.isValid(doctorId)) throw Object.assign(new Error('Selecione uma médica ou cirurgião ativo.'), { status: 400 });
     const doctor = await collections.options.findOne({ _id: new ObjectId(doctorId), type: 'doctors' });
     if (!doctor || (!doctor.active && (!previous || previous.doctorId !== doctorId))) throw Object.assign(new Error('Selecione uma médica ou cirurgião ativo.'), { status: 400 });
   }
   result.doctorId = doctorId || null;
+
+  if (isAgendaBlock) {
+    result.cityId = null;
+    result.employeeId = null;
+    result.employeeName = '';
+    result.statusId = null;
+    return result;
+  }
 
   const cityId = typeof values.cityId === 'string' ? values.cityId : '';
   if (cityId) {
@@ -280,7 +289,7 @@ async function validateSurgeryReferences(collections, values, previous = null) {
     result.employeeName = typeof values.employeeName === 'string' ? values.employeeName.trim() : '';
   }
   for (const [field, required, collection, type] of [
-    ['statusId', !isReserved, collections.options, 'statuses'],
+    ['statusId', !isReserved && !isAgendaBlock, collections.options, 'statuses'],
   ]) {
     const id = typeof values[field] === 'string' ? values[field] : '';
     if (!id && !required) {
@@ -306,6 +315,7 @@ function validateSurgeryDetails(body) {
   const date = typeof body.date === 'string' ? body.date : '';
   const time = typeof body.time === 'string' ? body.time : '';
   const isReserved = body.isReserved === true;
+  const isAgendaBlock = body.isAgendaBlock === true;
   const dateParts = date ? date.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
   const normalizedDate = dateParts ? new Date(Date.UTC(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3]))) : null;
   if (date && (!normalizedDate || Number.isNaN(normalizedDate.getTime()) || normalizedDate.toISOString().slice(0, 10) !== date)) {
@@ -316,6 +326,20 @@ function validateSurgeryDetails(body) {
     throw Object.assign(new Error('Informe um horário válido.'), { status: 400 });
   }
   if (isReserved && !time) throw Object.assign(new Error('Informe um horário para reservar.'), { status: 400 });
+  if (isAgendaBlock) {
+    if (!date) throw Object.assign(new Error('Informe a data do bloqueio.'), { status: 400 });
+    if (!time) throw Object.assign(new Error('Informe o horário do bloqueio.'), { status: 400 });
+    if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) throw Object.assign(new Error('Informe um horário válido.'), { status: 400 });
+    const reservationName = typeof body.reservationName === 'string' ? body.reservationName.trim().replace(/\s+/g, ' ') : '';
+    if (!reservationName) throw Object.assign(new Error('Informe o nome ou motivo do bloqueio.'), { status: 400 });
+    if (reservationName.length > 160) throw Object.assign(new Error('O motivo do bloqueio deve ter até 160 caracteres.'), { status: 400 });
+    return {
+      patient: '', procedure: '', anesthetist: '', employeeName: '', hospitalName: '', phone: '',
+      consultationDate: '', totalAmount: null, depositPaid: null, pendingAmount: null,
+      returnDate: '', returnType: '', observations: '', reservationName,
+      date, time, isReserved: false, recordType: 'agenda_block',
+    };
+  }
   const fields = {};
   for (const [key, label, maxLength, required] of [
     ['patient', 'paciente', 160, !isReserved],
@@ -399,6 +423,7 @@ async function serializeSurgery(surgery, collections, lookups = null) {
     date: surgery.date || '',
     time: surgery.time || '',
     isReserved: surgery.recordType === 'reservation' || surgery.isReserved === true,
+    isAgendaBlock: surgery.recordType === 'agenda_block',
     recordType: surgery.recordType || (surgery.isReserved === true ? 'reservation' : 'surgery'),
     createdAt: surgery.createdAt,
     updatedAt: surgery.updatedAt,
@@ -748,11 +773,21 @@ async function handleRequest(request, response) {
     }
 
     const surgeryMatch = pathname.match(/^\/api\/surgeries\/([a-f\d]{24})$/i);
-    if (surgeryMatch && request.method === 'PUT') {
-      const body = await readJson(request);
+    if (surgeryMatch && ['PUT', 'DELETE'].includes(request.method)) {
       const id = new ObjectId(surgeryMatch[1]);
       const current = await collections.surgeries.findOne({ _id: id });
       if (!current) throw Object.assign(new Error('Cirurgia não encontrada.'), { status: 404 });
+      if (request.method === 'DELETE') {
+        if (current.recordType !== 'agenda_block') throw Object.assign(new Error('Somente bloqueios de agenda podem ser excluídos por esta ação.'), { status: 400 });
+        await collections.surgeries.deleteOne({ _id: id, recordType: 'agenda_block' });
+        sendJson(response, 200, { deleted: true });
+        return;
+      }
+      const body = await readJson(request);
+      const currentIsAgendaBlock = current.recordType === 'agenda_block';
+      if (currentIsAgendaBlock !== (body.isAgendaBlock === true)) {
+        throw Object.assign(new Error('O tipo deste registro não pode ser alterado durante a edição.'), { status: 400 });
+      }
       const currentIsReservation = current.recordType === 'reservation' || current.isReserved === true;
       if (currentIsReservation && body.isReserved !== true && body.convertReservation !== true) {
         throw Object.assign(new Error('Para transformar este horário reservado em cirurgia, use “Converter em cirurgia” no formulário.'), { status: 400 });
