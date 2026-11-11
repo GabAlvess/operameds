@@ -16,6 +16,12 @@ npm start
 
 Abra `http://localhost:3000`. O login usa nome de usuário e PIN numérico de quatro dígitos; PINs são armazenados com hash. Não há usuários de demonstração. O endpoint local `/api/access/bootstrap` só configura a primeira conta quando a coleção `users` está vazia.
 
+## Deploy no Vercel
+
+O repositório está configurado para servir os arquivos estáticos e executar a API como uma Vercel Function Node.js. Importe o repositório no Vercel com a raiz do projeto na pasta principal; não é necessário comando de build. Configure `MONGODB_URI` como variável secreta nos ambientes Preview e Production. `MONGODB_DB` é opcional e, se omitido, usa `operamed`. Não cadastre `PORT` no Vercel.
+
+A implantação deve apontar para o MongoDB que contém os usuários e dados existentes. O banco também precisa aceitar conexões originadas da infraestrutura Vercel conforme a política de acesso de rede do Atlas. O endpoint de configuração inicial de usuário é restrito a conexões locais e não deve ser usado no deploy.
+
 ## Funcionalidades
 
 - **Painel Inicial:** resumo das cirurgias cadastradas e próximas datas.

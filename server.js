@@ -14,19 +14,21 @@ const collectionNames = { options: 'settings_options', surgeries: 'surgeries', e
 const scrypt = promisify(crypto.scrypt);
 const loginAttempts = new Map();
 
-if (!mongoUri) {
-  console.error('MONGODB_URI não foi definida. Configure a variável no arquivo .env.');
-  process.exit(1);
-}
-
-const mongoClient = new MongoClient(mongoUri, {
-  serverSelectionTimeoutMS: 8000,
-  connectTimeoutMS: 10000,
-});
+let mongoClient;
 let connectionPromise;
 let indexesPromise;
 
 function getDatabase() {
+  if (!mongoUri) {
+    throw Object.assign(new Error('MONGODB_URI não foi definida. Configure a variável no ambiente.'), { status: 500 });
+  }
+  if (!mongoClient) {
+    mongoClient = new MongoClient(mongoUri, {
+      serverSelectionTimeoutMS: 8000,
+      connectTimeoutMS: 10000,
+      maxPoolSize: 10,
+    });
+  }
   if (!connectionPromise) {
     connectionPromise = mongoClient.connect().then(() => mongoClient.db(databaseName)).catch((error) => {
       connectionPromise = undefined;
@@ -421,9 +423,11 @@ async function serializeSurgeries(data, collections) {
   for (const surgery of data) serialized.push(await serializeSurgery(surgery, collections, lookups));
   return serialized;
 }
-const server = http.createServer(async (request, response) => {
+async function handleRequest(request, response) {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
-  const pathname = url.pathname;
+  const vercelPath = url.searchParams.get('__vercel_path');
+  const pathname = vercelPath && /^\/api(?:\/|$)/.test(vercelPath) ? vercelPath : url.pathname;
+  url.searchParams.delete('__vercel_path');
 
   if (request.method === 'GET' && pathname === '/api/health') {
     try {
@@ -745,17 +749,27 @@ const server = http.createServer(async (request, response) => {
     });
     response.end(content);
   });
-});
-
-server.listen(port, () => {
-  console.log(`OperaMeds disponível em http://localhost:${port}`);
-});
-
-async function shutdown() {
-  server.close();
-  await mongoClient.close();
-  process.exit(0);
 }
 
-process.on('SIGINT', shutdown);
-process.on('SIGTERM', shutdown);
+module.exports = { handler: handleRequest };
+
+if (require.main === module) {
+  if (!mongoUri) {
+    console.error('MONGODB_URI não foi definida. Configure a variável no arquivo .env.');
+    process.exitCode = 1;
+  } else {
+    const server = http.createServer(handleRequest);
+    server.listen(port, () => {
+      console.log(`OperaMeds disponível em http://localhost:${port}`);
+    });
+
+    async function shutdown() {
+      server.close();
+      if (mongoClient) await mongoClient.close();
+      process.exit(0);
+    }
+
+    process.on('SIGINT', shutdown);
+    process.on('SIGTERM', shutdown);
+  }
+}
