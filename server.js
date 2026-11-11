@@ -456,6 +456,11 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (apiOnlyMode && request.method === 'GET' && pathname === '/') {
+    sendJson(response, 200, { service: 'OperaMeds API', status: 'ok' });
+    return;
+  }
+
   if (request.method === 'GET' && pathname === '/healthz') {
     sendJson(response, 200, { status: 'ok' });
     return;
