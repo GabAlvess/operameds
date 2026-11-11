@@ -267,14 +267,6 @@ async function validateSurgeryReferences(collections, values, previous = null) {
   }
   result.doctorId = doctorId || null;
 
-  if (isAgendaBlock) {
-    result.cityId = null;
-    result.employeeId = null;
-    result.employeeName = '';
-    result.statusId = null;
-    return result;
-  }
-
   const cityId = typeof values.cityId === 'string' ? values.cityId : '';
   if (cityId) {
     if (!ObjectId.isValid(cityId)) throw Object.assign(new Error('Selecione uma cidade válida.'), { status: 400 });
@@ -282,6 +274,13 @@ async function validateSurgeryReferences(collections, values, previous = null) {
     if (!city || (!city.active && (!previous || previous.cityId !== cityId))) throw Object.assign(new Error('Selecione uma cidade ativa.'), { status: 400 });
     result.cityId = cityId;
   } else result.cityId = null;
+
+  if (isAgendaBlock) {
+    result.employeeId = null;
+    result.employeeName = '';
+    result.statusId = null;
+    return result;
+  }
 
   const employeeId = typeof values.employeeId === 'string' ? values.employeeId : '';
   if (employeeId) {

@@ -709,8 +709,9 @@ function syncReservationFields() {
   const legacyReservation = Boolean(editingSurgery?.isReserved && !editingSurgery?.isAgendaBlock && !convertingReservation);
   const specialTime = blockMode || legacyReservation;
   const doctorField = document.getElementById('doctorFormField');
-  document.getElementById(specialTime ? 'blockDoctorSlot' : 'normalDoctorSlot').append(doctorField);
   const newBlockMode = blockMode && !legacyReservation;
+  document.getElementById(specialTime ? 'blockDoctorSlot' : 'normalDoctorSlot').append(doctorField);
+  document.getElementById(newBlockMode ? 'blockCitySlot' : 'normalCitySlot').append(document.getElementById('cityFormField'));
   form.classList.toggle('is-agenda-block', newBlockMode);
   document.getElementById('surgeryDialog').classList.toggle('agenda-block-dialog', newBlockMode);
   document.getElementById('surgeryDetailFields').hidden = specialTime;
@@ -1052,8 +1053,10 @@ function filteredAgenda() {
   return surgeries.filter((surgery) => {
     if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
+    // Bloqueios antigos sem cidade permanecem visíveis, pois sua cidade não
+    // pode ser inferida. Os novos respeitam o filtro quando têm cidade salva.
+    if (isAgendaBlockRecord(surgery)) return !city || !surgery.cityId || surgery.cityId === city;
     if (city && surgery.cityId !== city) return false;
-    if (isAgendaBlockRecord(surgery)) return true;
     if (status === 'reserved' && !surgery.isReserved) return false;
     if (status && status !== 'reserved' && (surgery.isReserved || surgery.statusId !== status)) return false;
     return true;
@@ -1121,7 +1124,7 @@ function renderAgenda() {
       hospitalName.textContent = surgery.hospital?.name || '—';
       hospitalCell.append(hospitalName);
     }
-    if (!agendaBlock && surgery.city?.name) {
+    if (surgery.city?.name) {
       const city = document.createElement('small');
       city.textContent = surgery.city.name;
       hospitalCell.append(city);

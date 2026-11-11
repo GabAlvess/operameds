@@ -166,7 +166,7 @@
             <label class="form-field span-4 patient-only"><span>Data da consulta</span><input name="consultationDate" type="date" /></label>
             <label class="form-field span-4 patient-only"><span>Orçamentista</span><select name="employeeId"><option value="">Não selecionado</option></select><input name="employeeName" type="hidden" /></label>
           </div>
-          <div id="agendaBlockFields" class="surgery-form-grid" hidden><div id="blockDoctorSlot" class="span-6"></div><label class="form-field span-6"><span>Nome / Motivo do horário</span><input name="reservationName" maxlength="160" placeholder="Ex.: Consultório" autocomplete="off" /></label></div>
+          <div id="agendaBlockFields" class="surgery-form-grid" hidden><div id="blockDoctorSlot" class="span-6"></div><div id="blockCitySlot" class="span-6"></div><label class="form-field span-12"><span>Nome / Motivo do horário</span><input name="reservationName" maxlength="160" placeholder="Ex.: Consultório" autocomplete="off" /></label></div>
         </section>
         <section class="surgery-form-section" id="surgeryProcedureSection">
           <div class="surgery-form-section-heading"><h3>Cirurgia e Financeiro</h3></div>
@@ -189,7 +189,7 @@
             <div class="surgery-form-grid surgery-return-grid">
               <label class="form-field span-3"><span>Data Retorno</span><input name="returnDate" type="date" /></label>
               <label class="form-field span-5"><span>Tipo Retorno</span><input name="returnType" maxlength="120" autocomplete="off" /></label>
-              <label class="form-field span-4"><span>Cidade</span><select name="cityId"></select></label>
+              <div id="normalCitySlot" class="span-4"><label id="cityFormField" class="form-field"><span>Cidade</span><select name="cityId"></select></label></div>
               <label class="form-field span-12"><span>Observações</span><textarea name="observations" maxlength="2000" rows="3"></textarea></label>
             </div>
           </div>
@@ -206,6 +206,6 @@
     <dialog class="app-dialog" id="budgeterDialog" aria-labelledby="budgeterDialogTitle"><form id="budgeterForm" method="dialog"><div class="dialog-heading"><div><div class="eyebrow">CADASTRO INTERNO</div><h2 id="budgeterDialogTitle">Adicionar orçamentista</h2></div><button class="dialog-close" type="button" data-close-dialog="budgeterDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><label class="form-field"><span>Nome</span><input name="name" maxlength="120" required autocomplete="off" /></label><label class="check-field"><input name="active" type="checkbox" checked /><span>Ativo</span></label><div class="form-message" id="budgeterFormMessage" role="status"></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="budgeterDialog">Cancelar</button><button class="button button-primary" type="submit">Salvar Orçamentista</button></div></form></dialog>
     <dialog class="app-dialog archive-confirm-dialog" id="archiveConfirmDialog" aria-labelledby="archiveConfirmTitle"><div><div class="dialog-heading"><div><div class="eyebrow">PROCEDIMENTO</div><h2 id="archiveConfirmTitle">Arquivar procedimento?</h2><p>O registro <strong id="archiveConfirmName">selecionado</strong> sairá da Agenda e da Gestão. Você poderá restaurá-lo em Configurações.</p></div><button class="dialog-close" type="button" data-close-dialog="archiveConfirmDialog" aria-label="Fechar"><span class="material-symbols" aria-hidden="true">close</span></button></div><div class="dialog-actions"><button class="button button-secondary" type="button" data-close-dialog="archiveConfirmDialog">Cancelar</button><button class="button button-danger" id="archiveConfirmButton" type="button"><span class="material-symbols" aria-hidden="true">archive</span> Arquivar procedimento</button></div></div></dialog>
     <script src="/config.js"></script>
-    <script src="app.js?v=20261110-brand2-authfix1"></script>
+    <script src="app.js?v=20261111-agenda-block-city1"></script>
   </body>
 </html>
