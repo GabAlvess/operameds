@@ -11,7 +11,7 @@ Copie `.env.example` para `.env` e informe `MONGODB_URI`. `MONGODB_DB` é opcion
 
 ```sh
 npm install
-npm start
+npm run start:local
 ```
 
 Abra `http://localhost:3000`. O login usa nome de usuário e PIN numérico de quatro dígitos; PINs são armazenados com hash. Não há usuários de demonstração. O endpoint local `/api/access/bootstrap` só configura a primeira conta quando a coleção `users` está vazia.
@@ -24,9 +24,11 @@ No servidor da API, configure `OPERAMEDS_ALLOWED_ORIGINS` com a origem exata do 
 
 ## Deploy do backend no Render
 
-O arquivo `render.yaml` define um Web Service Node separado para a API. No Render, escolha **New > Blueprint**, conecte este repositório e aplique o serviço `operameds-api`. Na criação, informe `MONGODB_URI` e `OPERAMEDS_ALLOWED_ORIGINS`; este último deve conter a origem pública exata do front Vercel, sem caminho final (por exemplo, `https://operameds.vercel.app`). A configuração usa a porta `PORT` do Render e o endpoint `/healthz` para verificar se o processo está ativo. O Blueprint não fixa um plano de computação: revise e escolha o plano no painel antes de aplicar, pois o padrão atual do Render para um Web Service novo é pago. O plano gratuito suspende o serviço após 15 minutos sem tráfego e pode levar cerca de um minuto para voltar; o Render não recomenda serviços gratuitos para produção.
+Crie manualmente um **Web Service** ligado a este repositório e selecione o plano Free. Use `npm ci` como Build Command, `npm start` como Start Command e `/healthz` como Health Check Path. O script `start` inicia somente `server.js`; localmente, `npm run start:local` carrega as variáveis de `.env`.
 
-Depois que o Render fornecer a URL HTTPS do serviço, atualize `OPERAMEDS_API_BASE_URL` nos ambientes Production e Preview do Vercel para essa origem e publique uma nova versão do front. Não coloque `MONGODB_URI` no Vercel. Para atualizar o front e API com cookies de sessão de forma mais confiável, use domínios próprios no mesmo domínio registrável; o blueprint habilita `SameSite=None` para permitir o cenário Vercel + Render, mas navegadores podem restringir cookies de terceiros.
+Cadastre no ambiente do serviço `MONGODB_URI`, `OPERAMEDS_ALLOWED_ORIGINS` (a origem pública exata do front Vercel, sem caminho final, por exemplo `https://operameds.vercel.app`) e `OPERAMEDS_COOKIE_SAMESITE=None` para permitir cookies entre os dois domínios. `MONGODB_DB` usa `operamed` por padrão, e o Render fornece `PORT`. O script de build do Vercel é independente: `npm run build` gera apenas o front estático em `dist/`; o Start Command do Render não executa no Vercel.
+
+Depois que o Render fornecer a URL HTTPS do serviço, atualize `OPERAMEDS_API_BASE_URL` nos ambientes Production e Preview do Vercel para essa origem e publique uma nova versão do front. Não coloque `MONGODB_URI` no Vercel. Com `OPERAMEDS_COOKIE_SAMESITE=None`, o servidor envia cookies de sessão entre Vercel e Render; navegadores podem restringir cookies de terceiros, então domínios próprios no mesmo domínio registrável são mais confiáveis.
 
 ## Funcionalidades
 
