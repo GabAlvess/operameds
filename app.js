@@ -1079,27 +1079,18 @@ function availableCompanyFilterOptions() {
   return companyOptions.map((item) => ({ value: item.id, label: item.name }));
 }
 
-function availableHospitalFilterOptions() {
-  return [...new Set(surgeries.map((surgery) => surgery.hospital?.name?.trim()).filter(Boolean))]
-    .sort((a, b) => a.localeCompare(b, 'pt-BR'))
-    .map((name) => ({ value: name, label: name }));
-}
-
 function populateAgendaFilters() {
   const doctor = document.getElementById('agendaDoctorFilter');
   const city = document.getElementById('agendaCityFilter');
   const company = document.getElementById('agendaCompanyFilter');
-  const hospital = document.getElementById('agendaHospitalFilter');
   const status = document.getElementById('agendaStatusFilter');
   const selectedDoctor = doctor.value;
   const selectedCity = city.value;
   const selectedCompany = company.value;
-  const selectedHospital = hospital.value;
   const selectedStatus = status.value;
   populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todos os cirurgiões', selectedDoctor);
   populateFilter(city, availableCityFilterOptions(), 'Todas', selectedCity);
   populateFilter(company, availableCompanyFilterOptions(), 'Todas as empresas', selectedCompany);
-  populateFilter(hospital, availableHospitalFilterOptions(), 'Todos os hospitais', selectedHospital);
   status.replaceChildren();
   const all = document.createElement('option');
   all.value = '';
@@ -1172,7 +1163,6 @@ function filteredAgenda() {
   const doctor = document.getElementById('agendaDoctorFilter').value;
   const city = document.getElementById('agendaCityFilter').value;
   const company = document.getElementById('agendaCompanyFilter').value;
-  const hospital = document.getElementById('agendaHospitalFilter').value;
   const status = document.getElementById('agendaStatusFilter').value;
   const patient = document.getElementById('agendaPatientSearch').value.trim().toLocaleLowerCase('pt-BR');
   return surgeries.filter((surgery) => {
@@ -1188,7 +1178,6 @@ function filteredAgenda() {
     }
     if (city && surgery.cityId !== city) return false;
     if (company && surgery.companyId !== company) return false;
-    if (hospital && surgery.hospital?.name !== hospital) return false;
     if (patient && !(surgery.patient || surgery.reservationName || '').toLocaleLowerCase('pt-BR').includes(patient)) return false;
     if (status === 'reserved' && !surgery.isReserved) return false;
     if (status && status !== 'reserved' && (surgery.isReserved || surgery.statusId !== status)) return false;
@@ -1370,18 +1359,15 @@ function populateManagementFilters() {
   const month = document.getElementById('managementMonth');
   const doctor = document.getElementById('managementDoctorFilter');
   const company = document.getElementById('managementCompanyFilter');
-  const hospital = document.getElementById('managementHospitalFilter');
   const city = document.getElementById('managementCityFilter');
   const status = document.getElementById('managementStatusFilter');
-  if (!month || !doctor || !company || !hospital || !city || !status) return;
+  if (!month || !doctor || !company || !city || !status) return;
   const selectedDoctor = doctor.value;
   const selectedCompany = company.value;
-  const selectedHospital = hospital.value;
   const selectedCity = city.value;
   const selectedStatus = status.value;
   populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todos os cirurgiões', selectedDoctor);
   populateFilter(company, availableCompanyFilterOptions(), 'Todas as empresas', selectedCompany);
-  populateFilter(hospital, availableHospitalFilterOptions(), 'Todos os hospitais', selectedHospital);
   populateFilter(city, availableCityFilterOptions(), 'Todas as cidades', selectedCity);
   status.replaceChildren();
   const all = document.createElement('option');
@@ -1401,7 +1387,6 @@ function filteredManagementSurgeries() {
   const month = document.getElementById('managementMonth').value;
   const doctor = document.getElementById('managementDoctorFilter').value;
   const company = document.getElementById('managementCompanyFilter').value;
-  const hospital = document.getElementById('managementHospitalFilter').value;
   const city = document.getElementById('managementCityFilter').value;
   const status = document.getElementById('managementStatusFilter').value;
   const patient = document.getElementById('managementPatientSearch').value.trim().toLocaleLowerCase('pt-BR');
@@ -1410,7 +1395,6 @@ function filteredManagementSurgeries() {
     if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
     if (company && surgery.companyId !== company) return false;
-    if (hospital && (surgery.hospital?.name || '').trim() !== hospital) return false;
     if (city && surgery.cityId !== city) return false;
     if (status && surgery.statusId !== status) return false;
     if (patient && !(surgery.patient || '').toLocaleLowerCase('pt-BR').includes(patient)) return false;
@@ -1788,7 +1772,7 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   showLoginGate();
 });
 
-['agendaMonth', 'agendaDoctorFilter', 'agendaCityFilter', 'agendaCompanyFilter', 'agendaHospitalFilter', 'agendaStatusFilter', 'agendaPatientSearch'].forEach((id) => {
+['agendaMonth', 'agendaDoctorFilter', 'agendaCityFilter', 'agendaCompanyFilter', 'agendaStatusFilter', 'agendaPatientSearch'].forEach((id) => {
   document.getElementById(id).addEventListener('change', (event) => {
     if (id === 'agendaMonth') enforceMonthMinimum(event.currentTarget);
     if (id === 'agendaMonth') renderMonthPicker('agendaMonth');
@@ -1810,7 +1794,7 @@ document.getElementById('agendaMonthYearAll').addEventListener('click', () => {
   renderMonthPicker('agendaMonth', year);
   renderAgenda();
 });
-['managementMonth', 'managementDoctorFilter', 'managementCompanyFilter', 'managementHospitalFilter', 'managementCityFilter', 'managementStatusFilter', 'managementPatientSearch'].forEach((id) => {
+['managementMonth', 'managementDoctorFilter', 'managementCompanyFilter', 'managementCityFilter', 'managementStatusFilter', 'managementPatientSearch'].forEach((id) => {
   document.getElementById(id).addEventListener(id === 'managementPatientSearch' ? 'input' : 'change', (event) => {
     if (id === 'managementMonth') enforceMonthMinimum(event.currentTarget);
     if (id === 'managementMonth') renderMonthPicker('managementMonth');

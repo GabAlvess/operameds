@@ -147,7 +147,7 @@
 .archived-icon-button .material-symbols{font-size:18px}
 @media(max-width:560px){.archived-surgery-row{align-items:flex-start;padding:12px 9px}.archived-surgery-details>span:not(.status-chip){white-space:normal;line-height:1.45}.archived-surgery-actions{gap:4px}.archived-icon-button{width:31px;height:31px}}
 .dashboard-reservation-note{margin:10px 2px 0;color:#587582;font-size:11px;text-align:right}.reservation-convert{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 14px;border:1px solid #cfe5e8;border-radius:10px;background:#f2faf9;color:#3d6672;font-size:11px;line-height:1.45}.reservation-convert[hidden]{display:none}.reservation-convert .button{flex:none}
-#page-gestao .management-filters{grid-template-columns:1.05fr repeat(5,minmax(0,1fr)) 1.35fr;gap:12px}
+#page-gestao .management-filters{grid-template-columns:1.05fr repeat(4,minmax(0,1fr)) 1.35fr;gap:12px}
 .month-picker-chevron{transform:none}
 #page-agenda .agenda-result-line{display:flex;justify-content:flex-end;margin:-4px 2px 9px}
 #page-agenda .agenda-result-count{margin:0}
@@ -265,7 +265,7 @@
 @media(max-width:700px){.surgery-return-grid{grid-template-columns:minmax(0,1fr)}.surgery-return-grid>.form-field{grid-column:1/-1}}
 
 /* Agenda com múltiplos períodos e empresas */
-.agenda-filters{grid-template-columns:repeat(7,minmax(0,1fr))}
+.agenda-filters{grid-template-columns:repeat(6,minmax(0,1fr))}
 .agenda-month-group td{height:37px;padding:8px 15px;background:#e7eef7;color:#173e57;font-size:12px;font-weight:800;letter-spacing:.45px}
 .agenda-print-meta{margin:0 0 8px;color:#526d7a;font-size:10px;font-weight:600}
 .agenda-company-cell{font-weight:600;white-space:nowrap}
