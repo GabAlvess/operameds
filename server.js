@@ -757,6 +757,17 @@ async function handleRequest(request, response) {
       return;
     }
 
+    const blockDeleteMatch = pathname.match(/^\/api\/surgeries\/([a-f\d]{24})\/delete$/i);
+    if (blockDeleteMatch && request.method === 'POST') {
+      const id = new ObjectId(blockDeleteMatch[1]);
+      const current = await collections.surgeries.findOne({ _id: id });
+      if (!current) throw Object.assign(new Error('Bloqueio de agenda não encontrado.'), { status: 404 });
+      if (current.recordType !== 'agenda_block') throw Object.assign(new Error('Somente bloqueios de agenda podem ser excluídos por esta ação.'), { status: 400 });
+      await collections.surgeries.deleteOne({ _id: id, recordType: 'agenda_block' });
+      sendJson(response, 200, { deleted: true });
+      return;
+    }
+
     const archiveMatch = pathname.match(/^\/api\/surgeries\/([a-f\d]{24})\/(archive|restore)$/i);
     if (archiveMatch && request.method === 'POST') {
       const id = new ObjectId(archiveMatch[1]);

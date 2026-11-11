@@ -506,7 +506,7 @@ async function confirmDeleteAgendaBlock() {
   const button = document.getElementById('confirmDeleteAgendaBlockButton');
   button.disabled = true;
   try {
-    await api('/api/surgeries/' + pendingAgendaBlockDelete.id, { method: 'DELETE', body: '{}' });
+    await api('/api/surgeries/' + pendingAgendaBlockDelete.id + '/delete', { method: 'POST', body: '{}' });
     document.getElementById('deleteAgendaBlockDialog').close();
     closeSurgeryDialogNow();
     pendingAgendaBlockDelete = null;
