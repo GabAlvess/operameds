@@ -13,3 +13,4 @@ npm-debug.log*
 /Prancheta Médica com Swoosh Colorido.png
 
 .vercel/
+dist/

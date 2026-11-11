@@ -9,6 +9,7 @@ const root = __dirname;
 const port = Number(process.env.PORT) || 3000;
 const mongoUri = process.env.MONGODB_URI;
 const databaseName = process.env.MONGODB_DB || 'operamed';
+const allowedOrigins = new Set((process.env.OPERAMEDS_ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
 const optionTypes = new Set(['doctors', 'statuses', 'cities']);
 const collectionNames = { options: 'settings_options', surgeries: 'surgeries', employees: 'employees', budgeters: 'budgeters', users: 'users', sessions: 'sessions', metadata: 'system_metadata' };
 const scrypt = promisify(crypto.scrypt);
@@ -88,6 +89,7 @@ const publicFiles = new Map([
   ['/index.html',['index.html','text/html; charset=utf-8']],
   ['/styles.css',['styles.css','text/css; charset=utf-8']],
   ['/app.js',['app.js','text/javascript; charset=utf-8']],
+  ['/config.js',['config.js','text/javascript; charset=utf-8']],
   ['/assets/operameds-logo.png',['assets/operameds-logo.png','image/png']],
   ['/assets/operameds-icon.png',['assets/operameds-icon.png','image/png']],
 ]);
@@ -203,7 +205,8 @@ function sessionToken(request) {
 
 function sessionCookie(token, request, maxAge = 60 * 60 * 24 * 7) {
   const secure = request.headers['x-forwarded-proto'] === 'https';
-  return `operamed_session=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=Strict; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
+  const sameSite = process.env.OPERAMEDS_COOKIE_SAMESITE === 'None' && secure ? 'None' : 'Strict';
+  return `operamed_session=${encodeURIComponent(token)}; Path=/; HttpOnly; SameSite=${sameSite}; Max-Age=${maxAge}${secure ? '; Secure' : ''}`;
 }
 
 async function userForRequest(request, collections) {
@@ -428,6 +431,24 @@ async function handleRequest(request, response) {
   const vercelPath = url.searchParams.get('__vercel_path');
   const pathname = vercelPath && /^\/api(?:\/|$)/.test(vercelPath) ? vercelPath : url.pathname;
   url.searchParams.delete('__vercel_path');
+  const origin = request.headers.origin;
+  const originAllowed = Boolean(origin && allowedOrigins.has(origin));
+  if (originAllowed) {
+    response.setHeader('Access-Control-Allow-Origin', origin);
+    response.setHeader('Access-Control-Allow-Credentials', 'true');
+    response.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+    response.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    response.setHeader('Vary', 'Origin');
+  }
+  if (request.method === 'OPTIONS') {
+    if (!originAllowed) {
+      sendJson(response, 403, { error: 'Origem não autorizada.' });
+      return;
+    }
+    response.writeHead(204);
+    response.end();
+    return;
+  }
 
   if (request.method === 'GET' && pathname === '/api/health') {
     try {

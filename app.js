@@ -20,9 +20,11 @@ let editingSurgery = null;
 let convertingReservation = false;
 let pendingArchive = null;
 let toastTimer;
+const apiBaseUrl = String(window.OPERAMEDS_API_BASE_URL || '').replace(/\/+$/, '');
 
 async function api(path, options = {}) {
-  const response = await fetch(path, { ...options, headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
+  const target = apiBaseUrl ? new URL(path, apiBaseUrl).toString() : path;
+  const response = await fetch(target, { ...options, credentials: apiBaseUrl ? 'include' : 'same-origin', headers: { 'Content-Type': 'application/json', ...(options.headers || {}) } });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) {
     if (response.status === 401 && document.getElementById('authGate').hidden) {

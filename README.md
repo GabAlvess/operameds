@@ -16,11 +16,11 @@ npm start
 
 Abra `http://localhost:3000`. O login usa nome de usuário e PIN numérico de quatro dígitos; PINs são armazenados com hash. Não há usuários de demonstração. O endpoint local `/api/access/bootstrap` só configura a primeira conta quando a coleção `users` está vazia.
 
-## Deploy no Vercel
+## Deploy somente do front-end no Vercel
 
-O repositório está configurado para servir os arquivos estáticos e executar a API como uma Vercel Function Node.js. Importe o repositório no Vercel com a raiz do projeto na pasta principal; não é necessário comando de build. Configure `MONGODB_URI` como variável secreta nos ambientes Preview e Production. `MONGODB_DB` é opcional e, se omitido, usa `operamed`. Não cadastre `PORT` no Vercel.
+O build publica apenas `index.html`, `app.js`, `styles.css`, a configuração pública do endpoint e os dois arquivos de identidade visual em `dist/`. A API e o MongoDB permanecem no servidor externo. Importe este repositório no Vercel, mantenha a raiz na pasta principal e configure `OPERAMEDS_API_BASE_URL` como uma origem HTTPS, por exemplo `https://api.exemplo.com`. O build falha se essa variável estiver ausente ou inválida. Não configure `MONGODB_URI` no Vercel de front-end.
 
-A implantação deve apontar para o MongoDB que contém os usuários e dados existentes. O banco também precisa aceitar conexões originadas da infraestrutura Vercel conforme a política de acesso de rede do Atlas. O endpoint de configuração inicial de usuário é restrito a conexões locais e não deve ser usado no deploy.
+No servidor da API, configure `OPERAMEDS_ALLOWED_ORIGINS` com a origem exata do front-end Vercel (ou do domínio personalizado), separando várias origens por vírgulas. Use domínio próprio para o front e para a API no mesmo domínio registrável quando possível. Para origens realmente cross-site, `OPERAMEDS_COOKIE_SAMESITE=None` habilita cookies `Secure; SameSite=None`, mas alguns navegadores podem bloquear cookies de terceiros. A conexão `MONGODB_URI` e a permissão de rede do MongoDB continuam configuradas exclusivamente onde a API estiver hospedada.
 
 ## Funcionalidades
 
