@@ -22,6 +22,12 @@ O build publica apenas `index.html`, `app.js`, `styles.css`, a configuração p�
 
 No servidor da API, configure `OPERAMEDS_ALLOWED_ORIGINS` com a origem exata do front-end Vercel (ou do domínio personalizado), separando várias origens por vírgulas. Use domínio próprio para o front e para a API no mesmo domínio registrável quando possível. Para origens realmente cross-site, `OPERAMEDS_COOKIE_SAMESITE=None` habilita cookies `Secure; SameSite=None`, mas alguns navegadores podem bloquear cookies de terceiros. A conexão `MONGODB_URI` e a permissão de rede do MongoDB continuam configuradas exclusivamente onde a API estiver hospedada.
 
+## Deploy do backend no Render
+
+O arquivo `render.yaml` define um Web Service Node separado para a API. No Render, escolha **New > Blueprint**, conecte este repositório e aplique o serviço `operameds-api`. Na criação, informe `MONGODB_URI` e `OPERAMEDS_ALLOWED_ORIGINS`; este último deve conter a origem pública exata do front Vercel, sem caminho final (por exemplo, `https://operameds.vercel.app`). A configuração usa a porta `PORT` do Render e o endpoint `/healthz` para verificar se o processo está ativo. O Blueprint não fixa um plano de computação: revise e escolha o plano no painel antes de aplicar, pois o padrão atual do Render para um Web Service novo é pago. O plano gratuito suspende o serviço após 15 minutos sem tráfego e pode levar cerca de um minuto para voltar; o Render não recomenda serviços gratuitos para produção.
+
+Depois que o Render fornecer a URL HTTPS do serviço, atualize `OPERAMEDS_API_BASE_URL` nos ambientes Production e Preview do Vercel para essa origem e publique uma nova versão do front. Não coloque `MONGODB_URI` no Vercel. Para atualizar o front e API com cookies de sessão de forma mais confiável, use domínios próprios no mesmo domínio registrável; o blueprint habilita `SameSite=None` para permitir o cenário Vercel + Render, mas navegadores podem restringir cookies de terceiros.
+
 ## Funcionalidades
 
 - **Painel Inicial:** resumo das cirurgias cadastradas e próximas datas.

@@ -450,6 +450,16 @@ async function handleRequest(request, response) {
     return;
   }
 
+  if (origin && request.method !== 'GET' && !originAllowed) {
+    sendJson(response, 403, { error: 'Origem não autorizada.' });
+    return;
+  }
+
+  if (request.method === 'GET' && pathname === '/healthz') {
+    sendJson(response, 200, { status: 'ok' });
+    return;
+  }
+
   if (request.method === 'GET' && pathname === '/api/health') {
     try {
       const database = await getDatabase();
@@ -780,8 +790,8 @@ if (require.main === module) {
     process.exitCode = 1;
   } else {
     const server = http.createServer(handleRequest);
-    server.listen(port, () => {
-      console.log(`OperaMeds disponível em http://localhost:${port}`);
+    server.listen(port, '0.0.0.0', () => {
+      console.log(`OperaMeds API disponível na porta ${port}`);
     });
 
     async function shutdown() {
