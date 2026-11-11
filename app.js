@@ -12,6 +12,7 @@ let accessUsers = [];
 let budgeters = [];
 let surgeries = [];
 let archivedSurgeries = [];
+let settingsLoaded = false;
 let currentEmployee = null;
 let editingOption = null;
 let editingEmployee = null;
@@ -51,7 +52,7 @@ function navigate(pageName, updateHistory = true) {
   breadcrumb.textContent = page.dataset.title;
   if (updateHistory && location.hash !== '#' + pageName) history.pushState({ page: pageName }, '', '#' + pageName);
   closeMenu();
-  if (pageName === 'configuracoes') Promise.all([loadSettings(), loadSurgeries()]).catch((error) => showToast(error.message, 'error'));
+  if (pageName === 'configuracoes') Promise.all([loadSettings(), loadSurgeries(true)]).catch((error) => showToast(error.message, 'error'));
   if (pageName === 'gestao' || pageName === 'agenda') Promise.all([loadSettings(), loadSurgeries()]).catch((error) => showToast(error.message, 'error'));
   if (pageName === 'painel') loadSurgeries().catch((error) => showToast(error.message, 'error'));
 }
@@ -98,6 +99,7 @@ async function loadSettings() {
   const result = await Promise.all([api('/api/settings'), api('/api/budgeters')]);
   optionTypes.forEach((type) => { optionsByType[type] = result[0].filter((item) => item.type === type); });
   budgeters = result[1];
+  settingsLoaded = true;
   optionTypes.forEach(renderOptionList);
   renderBudgeterList();
   document.querySelectorAll('[data-settings-tab="employees"]').forEach((tab) => { tab.hidden = !isAdmin(); });
@@ -118,8 +120,16 @@ async function loadUsers() {
   renderEmployeeList();
 }
 
-async function loadSurgeries() {
-  [surgeries, archivedSurgeries] = await Promise.all([api('/api/surgeries'), api('/api/surgeries/archived')]);
+async function loadSurgeries(includeArchived = false) {
+  const requests = [api('/api/surgeries')];
+  if (includeArchived) requests.push(api('/api/surgeries/archived'));
+  const result = await Promise.all(requests);
+  surgeries = result[0];
+  if (includeArchived) archivedSurgeries = result[1];
+  renderSurgeryViews();
+}
+
+function renderSurgeryViews() {
   populateAgendaFilters();
   populateManagementFilters();
   populateCommissionFilters();
@@ -493,7 +503,7 @@ async function confirmArchiveSurgery() {
   try {
     await api('/api/surgeries/' + pendingArchive.id + '/archive', { method: 'POST', body: '{}' });
     document.getElementById('archiveConfirmDialog').close();
-    await loadSurgeries();
+    await loadSurgeries(true);
     showToast('Procedimento arquivado.');
     pendingArchive = null;
   } catch (error) { showToast(error.message, 'error'); }
@@ -524,7 +534,7 @@ async function confirmDeleteAgendaBlock() {
 async function restoreSurgery(surgery) {
   try {
     await api('/api/surgeries/' + surgery.id + '/restore', { method: 'POST', body: '{}' });
-    await loadSurgeries();
+    await loadSurgeries(true);
     showToast('Procedimento restaurado para a Agenda e a Gestão.');
   } catch (error) { showToast(error.message, 'error'); }
 }
@@ -856,12 +866,15 @@ async function saveSurgery(event) {
   form.dataset.saving = 'true';
   setFormMessage(message, 'Salvando…', 'info');
   try {
-    await api(editingSurgery ? '/api/surgeries/' + editingSurgery.id : '/api/surgeries', {
+    const savedSurgery = await api(editingSurgery ? '/api/surgeries/' + editingSurgery.id : '/api/surgeries', {
       method: editingSurgery ? 'PUT' : 'POST',
       body: JSON.stringify(body),
     });
+    const existingIndex = surgeries.findIndex((item) => item.id === savedSurgery.id);
+    if (existingIndex < 0) surgeries.push(savedSurgery);
+    else surgeries[existingIndex] = savedSurgery;
     closeSurgeryDialogNow();
-    await loadSurgeries();
+    renderSurgeryViews();
     showToast(convertingReservation ? 'Horário convertido em cirurgia.' : editingSurgery ? (body.isAgendaBlock ? 'Bloqueio atualizado.' : 'Cirurgia atualizada com sucesso.') : body.isAgendaBlock ? 'Bloqueio de agenda salvo.' : body.isReserved ? 'Horário reservado com sucesso.' : 'Cirurgia cadastrada com sucesso.');
   } catch (error) { setFormMessage(message, error.message); }
   finally { submit.disabled = false; delete form.dataset.saving; }
@@ -1068,11 +1081,12 @@ function appendCell(row, value, className = '') {
   return cell;
 }
 
-function openSurgeryFromRow(surgery) {
-  loadSettings().then(() => loadSurgeries()).then(() => {
+async function openSurgeryFromRow(surgery) {
+  try {
+    if (!settingsLoaded) await loadSettings();
     const current = surgeries.find((item) => item.id === surgery.id) || archivedSurgeries.find((item) => item.id === surgery.id);
     if (current) openSurgeryDialog(current);
-  }).catch((error) => showToast(error.message, 'error'));
+  } catch (error) { showToast(error.message, 'error'); }
 }
 
 function normalizeEmployeeName(value) {
