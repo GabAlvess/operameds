@@ -965,9 +965,6 @@ function renderMonthPicker(inputId, draftYear = null) {
     document.getElementById('agendaMonthDisplay').textContent = !months.length
       ? 'Todos os meses'
       : months.length === 1 ? agendaMonthLabel(months[0]) : months.length + ' meses selecionados';
-    const allButton = document.getElementById('agendaMonthAll');
-    allButton.classList.toggle('selected', !months.length);
-    allButton.setAttribute('aria-pressed', String(!months.length));
     const selection = document.getElementById('agendaMonthSelection');
     selection.textContent = months.length ? months.length + (months.length === 1 ? ' mês selecionado.' : ' meses selecionados.') : 'Nenhum mês selecionado: exibindo todos os meses.';
     const chips = document.getElementById('agendaMonthChips');
@@ -1804,19 +1801,6 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   if (id === 'agendaPatientSearch') document.getElementById(id).addEventListener('input', renderAgenda);
 });
 document.getElementById('agendaMonth').value = monthValue();
-document.getElementById('agendaMonthAll').addEventListener('click', () => {
-  document.getElementById('agendaMonth').value = '';
-  renderMonthPicker('agendaMonth');
-  renderAgenda();
-});
-document.getElementById('agendaMonthYearAll').addEventListener('click', () => {
-  const year = Math.max(2022, Math.min(9999, Number(document.getElementById('agendaMonthYear').value) || new Date().getFullYear()));
-  const months = new Set(selectedAgendaMonths());
-  for (let month = 1; month <= 12; month += 1) months.add(year + '-' + String(month).padStart(2, '0'));
-  document.getElementById('agendaMonth').value = [...months].sort().join(',');
-  renderMonthPicker('agendaMonth', year);
-  renderAgenda();
-});
 ['managementMonth', 'managementDoctorFilter', 'managementCompanyFilter', 'managementCityFilter', 'managementStatusFilter', 'managementPatientSearch'].forEach((id) => {
   document.getElementById(id).addEventListener(id === 'managementPatientSearch' ? 'input' : 'change', (event) => {
     if (id === 'managementMonth') enforceMonthMinimum(event.currentTarget);

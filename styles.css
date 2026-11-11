@@ -279,8 +279,6 @@
 .agenda-company-cell{font-weight:600;white-space:nowrap}
 #agendaMonthPopover{width:min(360px,calc(100vw - 42px))}
 #agendaMonthYear{width:90px;height:34px;padding:0 8px;border:1px solid #dce6e9;border-radius:7px;background:#f8fbfc;color:#24475a;font:inherit;font-size:12px;font-weight:600}
-.agenda-month-picker-actions{display:grid;gap:6px}
-.agenda-month-picker-actions .month-picker-all{margin:0;font-size:11px}
 .agenda-month-selection{max-height:62px;overflow:auto;margin-top:9px;color:#71818c;font-size:10px;line-height:1.45}
 .share-table{min-width:820px}
 .share-table tr.agenda-block-row td{background:#EDE4FF;color:#59359A;border-color:#dccdf5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
