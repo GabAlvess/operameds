@@ -277,10 +277,22 @@
 .agenda-month-group td{height:37px;padding:8px 15px;background:#e7eef7;color:#173e57;font-size:12px;font-weight:800;letter-spacing:.45px}
 .agenda-print-meta{margin:0 0 8px;color:#526d7a;font-size:10px;font-weight:600}
 .agenda-company-cell{font-weight:600;white-space:nowrap}
+#page-agenda .agenda-table{width:100%;min-width:980px;table-layout:fixed}
+#page-gestao .management-company-group{gap:7px}
+#page-agenda .agenda-table th,#page-agenda .agenda-table td{padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#page-agenda .agenda-table thead th{height:36px;font-size:10px}
+#page-agenda .agenda-table tbody td{height:36px;font-size:10px;line-height:1.2}
+#page-agenda .agenda-table td strong,#page-agenda .agenda-table td small{display:inline;vertical-align:middle}
+#page-agenda .agenda-table td small{margin:0 0 0 4px;font-size:9px}
+#page-agenda .agenda-table td .status-chip{max-width:100%;min-height:22px;padding:3px 7px;overflow:hidden;text-overflow:ellipsis;font-size:9px}
+.share-dialog{width:min(1280px,calc(100vw - 28px))}
+.share-dialog #shareAgendaContent{overflow-x:auto}
+.share-table{width:100%;min-width:980px;table-layout:fixed}
+.share-table th,.share-table td{padding:7px 8px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:10px}
+.share-table .status-chip{max-width:100%;min-height:22px;padding:3px 7px;overflow:hidden;text-overflow:ellipsis;font-size:9px}
 #agendaMonthPopover{width:min(360px,calc(100vw - 42px))}
 #agendaMonthYear{width:90px;height:34px;padding:0 8px;border:1px solid #dce6e9;border-radius:7px;background:#f8fbfc;color:#24475a;font:inherit;font-size:12px;font-weight:600}
 .agenda-month-selection{max-height:62px;overflow:auto;margin-top:9px;color:#71818c;font-size:10px;line-height:1.45}
-.share-table{min-width:820px}
 .share-table tr.agenda-block-row td{background:#EDE4FF;color:#59359A;border-color:#dccdf5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
 @media(max-width:1500px){.agenda-filters{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:700px){.agenda-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}

@@ -1227,7 +1227,9 @@ function agendaCompanyLabel(surgery) {
 
 function appendCell(row, value, className = '') {
   const cell = document.createElement('td');
-  cell.textContent = value || '—';
+  const text = value || '—';
+  cell.textContent = text;
+  if (value) cell.title = String(value);
   if (className) cell.className = className;
   row.append(cell);
   return cell;
@@ -1289,7 +1291,6 @@ function renderAgenda() {
     row.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSurgeryFromRow(surgery); }
     });
-    appendCell(row, surgery.date ? dateLabel(surgery.date) : '—');
     appendCell(row, surgery.time);
     appendCell(row, agendaBlock ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient, surgery.isReserved && !agendaBlock ? 'reserved-copy' : '');
     appendCell(row, surgery.doctor?.name);
@@ -1300,19 +1301,24 @@ function renderAgenda() {
       const hospitalName = document.createElement('strong');
       hospitalName.textContent = surgery.hospital?.name || '—';
       hospitalCell.append(hospitalName);
+      if (surgery.hospital?.name) hospitalCell.title = surgery.hospital.name;
     }
     if (surgery.city?.name) {
       const city = document.createElement('small');
       city.textContent = surgery.city.name;
       hospitalCell.append(city);
+      hospitalCell.title = [surgery.hospital?.name, surgery.city.name].filter(Boolean).join(' · ');
     }
-    if (agendaBlock) { row.append(document.createElement('td'), document.createElement('td')); }
+    if (agendaBlock) { row.append(document.createElement('td'), document.createElement('td'), document.createElement('td')); }
     else {
+      appendCell(row, surgery.convenio);
       appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
       appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
     }
     const statusCell = document.createElement('td');
+    if (!agendaBlock && surgery.status?.name) statusCell.title = surgery.status.name;
     if (agendaBlock) {
+      statusCell.title = 'Bloqueio de Agenda';
       const blockType = document.createElement('span');
       blockType.className = 'agenda-block-type';
       const icon = document.createElement('span');
@@ -1506,9 +1512,10 @@ function createSurgeryCard(surgery) {
     createManagementGroup([
       ['staff', 'Orçamentista', surgery.employeeName || surgery.employee?.name],
       ['business', 'Empresa', surgery.company?.name || 'Empresa não definida'],
+      ...(surgery.convenio?.trim() ? [['business', 'Convênio', surgery.convenio]] : []),
       ['hospital', 'Hospital', surgery.hospital?.name],
       ['location', 'Cidade', surgery.city?.name],
-    ]),
+    ], 'management-company-group'),
     createManagementGroup([
       ['doctor', 'Médica', surgery.doctor?.name],
       ['doctor', 'Anestesista', surgery.anesthetist],
@@ -1517,7 +1524,6 @@ function createSurgeryCard(surgery) {
       ['surgery', 'Cirurgia', surgery.isReserved ? '—' : surgery.procedure],
       ['calendar', 'Data do retorno', managementDate(surgery.returnDate)],
       ['surgery', 'Tipo do retorno', surgery.returnType],
-      ...(surgery.convenio?.trim() ? [['business', 'Convênio', surgery.convenio]] : []),
     ]),
     createManagementGroup([
       ['notes', 'Observações', surgery.observations],
@@ -1598,9 +1604,16 @@ function renderSharePreview() {
   }
   const table = document.createElement('table');
   table.className = 'share-table';
+  const columns = document.createElement('colgroup');
+  [7, 16, 11, 9, 10, 10, 20, 8, 9].forEach((width) => {
+    const column = document.createElement('col');
+    column.style.width = width + '%';
+    columns.append(column);
+  });
+  table.append(columns);
   const head = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Data', 'Horário', 'Cirurgião', 'Empresa', 'Hospital / Cidade', 'Motivo / Cirurgia', 'Status / Tipo'].forEach((label) => {
+  ['Horário', 'Paciente / Motivo', 'Cirurgião', 'Empresa', 'Hospital', 'Convênio', 'Cirurgia', 'Anestesista', 'Status / Tipo'].forEach((label) => {
     const th = document.createElement('th');
     th.textContent = label;
     headerRow.append(th);
@@ -1617,7 +1630,7 @@ function renderSharePreview() {
       const monthGroup = document.createElement('tr');
       monthGroup.className = 'agenda-month-group';
       const cell = document.createElement('td');
-      cell.colSpan = 7;
+      cell.colSpan = 9;
       cell.textContent = agendaMonthHeading(surgery.date);
       monthGroup.append(cell);
       body.append(monthGroup);
@@ -1627,21 +1640,30 @@ function renderSharePreview() {
       const group = document.createElement('tr');
       group.className = 'agenda-day-group';
       const cell = document.createElement('td');
-      cell.colSpan = 7;
+      cell.colSpan = 9;
       cell.textContent = dateLabel(surgery.date, true);
       group.append(cell);
       body.append(group);
     }
     const row = document.createElement('tr');
     if (isAgendaBlockRecord(surgery)) row.className = 'agenda-block-row';
-    appendCell(row, surgery.date ? dateLabel(surgery.date) : '—');
     appendCell(row, surgery.time);
+    appendCell(row, isAgendaBlockRecord(surgery) ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient);
     appendCell(row, surgery.doctor?.name);
     appendCell(row, agendaCompanyLabel(surgery));
-    appendCell(row, [surgery.hospital?.name, surgery.city?.name].filter(Boolean).join(' · '));
-    appendCell(row, isAgendaBlockRecord(surgery) ? surgery.reservationName : surgery.isReserved ? '—' : surgery.procedure);
+    const agendaBlock = isAgendaBlockRecord(surgery);
+    if (agendaBlock) row.append(document.createElement('td'));
+    else appendCell(row, [surgery.hospital?.name, surgery.city?.name].filter(Boolean).join(' · '));
+    if (agendaBlock) row.append(document.createElement('td'));
+    else appendCell(row, surgery.convenio);
+    if (agendaBlock) row.append(document.createElement('td'));
+    else appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
+    if (agendaBlock) row.append(document.createElement('td'));
+    else appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
     const statusCell = document.createElement('td');
-    if (isAgendaBlockRecord(surgery)) {
+    if (!agendaBlock && surgery.status?.name) statusCell.title = surgery.status.name;
+    if (agendaBlock) {
+      statusCell.title = 'Bloqueio de Agenda';
       const blockType = document.createElement('span');
       blockType.className = 'agenda-block-type';
       const icon = document.createElement('span');
