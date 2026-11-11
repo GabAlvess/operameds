@@ -4,7 +4,7 @@ Aplicação web para organizar cirurgias, agenda e acompanhamento financeiro, co
 
 ## Requisitos e execução local
 
-- Node.js 20.6 ou superior
+- Node.js 24.21 ou superior, na linha 24.x
 - MongoDB Atlas ou outra instância MongoDB
 
 Copie `.env.example` para `.env` e informe `MONGODB_URI`. `MONGODB_DB` é opcional (padrão: `operamed`) e `PORT` define a porta HTTP (padrão: `3000`). Não compartilhe nem versione `.env`.
