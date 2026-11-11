@@ -251,10 +251,13 @@ async function validateSurgeryReferences(collections, values, previous = null) {
   const isReserved = values.isReserved === true;
   const result = {};
   const doctorId = typeof values.doctorId === 'string' ? values.doctorId : '';
-  if (!ObjectId.isValid(doctorId)) throw Object.assign(new Error('Selecione uma médica ou cirurgião ativo.'), { status: 400 });
-  const doctor = await collections.options.findOne({ _id: new ObjectId(doctorId), type: 'doctors' });
-  if (!doctor || (!doctor.active && (!previous || previous.doctorId !== doctorId))) throw Object.assign(new Error('Selecione uma médica ou cirurgião ativo.'), { status: 400 });
-  result.doctorId = doctorId;
+  if (!doctorId && isReserved) throw Object.assign(new Error('Selecione uma médica ou cirurgião para reservar o horário.'), { status: 400 });
+  if (doctorId) {
+    if (!ObjectId.isValid(doctorId)) throw Object.assign(new Error('Selecione uma médica ou cirurgião ativo.'), { status: 400 });
+    const doctor = await collections.options.findOne({ _id: new ObjectId(doctorId), type: 'doctors' });
+    if (!doctor || (!doctor.active && (!previous || previous.doctorId !== doctorId))) throw Object.assign(new Error('Selecione uma médica ou cirurgião ativo.'), { status: 400 });
+  }
+  result.doctorId = doctorId || null;
 
   const cityId = typeof values.cityId === 'string' ? values.cityId : '';
   if (cityId) {
@@ -303,21 +306,23 @@ function validateSurgeryDetails(body) {
   const date = typeof body.date === 'string' ? body.date : '';
   const time = typeof body.time === 'string' ? body.time : '';
   const isReserved = body.isReserved === true;
-  const dateParts = date.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const dateParts = date ? date.match(/^(\d{4})-(\d{2})-(\d{2})$/) : null;
   const normalizedDate = dateParts ? new Date(Date.UTC(Number(dateParts[1]), Number(dateParts[2]) - 1, Number(dateParts[3]))) : null;
-  if (!normalizedDate || Number.isNaN(normalizedDate.getTime()) || normalizedDate.toISOString().slice(0, 10) !== date) {
+  if (date && (!normalizedDate || Number.isNaN(normalizedDate.getTime()) || normalizedDate.toISOString().slice(0, 10) !== date)) {
     throw Object.assign(new Error('Informe uma data válida para a cirurgia.'), { status: 400 });
   }
-  if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
+  if (isReserved && !date) throw Object.assign(new Error('Informe uma data para reservar o horário.'), { status: 400 });
+  if (time && !/^([01]\d|2[0-3]):[0-5]\d$/.test(time)) {
     throw Object.assign(new Error('Informe um horário válido.'), { status: 400 });
   }
+  if (isReserved && !time) throw Object.assign(new Error('Informe um horário para reservar.'), { status: 400 });
   const fields = {};
   for (const [key, label, maxLength, required] of [
     ['patient', 'paciente', 160, !isReserved],
     ['procedure', 'cirurgia', 160, !isReserved],
     ['anesthetist', 'anestesista', 160, false],
     ['employeeName', 'orçamentista', 160, false],
-    ['hospitalName', 'hospital', 160, !isReserved],
+    ['hospitalName', 'hospital', 160, false],
     ['reservationName', 'identificação do horário', 160, false],
     ['phone', 'telefone', 40, false],
     ['returnType', 'tipo do retorno', 120, false],

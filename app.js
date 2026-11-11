@@ -678,7 +678,7 @@ function syncReservationFields() {
   document.querySelectorAll('#surgeryPatientFields .patient-only').forEach((field) => { field.hidden = reserved; });
   document.getElementById('reservationFields').hidden = !reserved;
   document.getElementById('surgeryHospitalField').hidden = reserved;
-  document.querySelector('#surgeryForm [name="hospitalName"]').required = !reserved;
+  document.querySelector('#surgeryForm [name="hospitalName"]').required = false;
   if (!reserved) document.querySelector('#surgeryForm [name="reservationName"]').value = '';
   ['patient', 'procedure'].forEach((name) => { document.querySelector('#surgeryForm [name="' + name + '"]').required = !reserved; });
   document.querySelector('#surgeryForm [name="statusId"]').required = !reserved;
@@ -704,9 +704,7 @@ function openSurgeryDialog(surgery = null) {
   convertingReservation = false;
   const form = document.getElementById('surgeryForm');
   form.reset();
-  const today = new Date();
-  const localDate = today.getFullYear() + '-' + String(today.getMonth() + 1).padStart(2, '0') + '-' + String(today.getDate()).padStart(2, '0');
-  form.elements.date.value = surgery?.date || localDate;
+  form.elements.date.value = surgery?.date || '';
   form.elements.time.value = surgery?.time || '';
   form.elements.patient.value = surgery?.patient || '';
   form.elements.procedure.value = surgery?.procedure || '';
@@ -722,7 +720,7 @@ function openSurgeryDialog(surgery = null) {
   form.elements.returnType.value = surgery?.returnType || '';
   form.elements.observations.value = surgery?.observations || '';
   form.elements.isReserved.checked = surgery?.isReserved === true;
-  fillSelect(form.elements.doctorId, optionsByType.doctors, 'Médica / Cirurgião', surgery?.doctor);
+  fillSelect(form.elements.doctorId, optionsByType.doctors, 'Médica / Cirurgião', surgery?.doctor, true);
   const oldEmployeeName = normalizeEmployeeName(surgery?.employeeName || surgery?.employee?.name || '');
   const currentEmployeeOption = surgery?.employee || budgeters.find((item) => normalizeEmployeeName(item.name) === oldEmployeeName) || null;
   fillSelect(form.elements.employeeId, budgeters, 'Orçamentista', currentEmployeeOption, true);
@@ -768,8 +766,10 @@ async function saveSurgery(event) {
   delete body.commissionAmount;
   const message = document.getElementById('surgeryFormMessage');
   const submit = form.querySelector('[type="submit"]');
-  if (!body.doctorId || (!body.isReserved && !body.hospitalName) || !body.date || !body.time || (!body.isReserved && (!body.patient || !body.procedure || !body.statusId))) {
-    setFormMessage(message, body.isReserved ? 'Informe data, horário e médica para reservar.' : 'Preencha os campos obrigatórios e cadastre opções ativas em Configurações.');
+  const missingReservationFields = body.isReserved && (!body.date || !body.time || !body.doctorId);
+  const missingSurgeryFields = !body.isReserved && (!body.patient || !body.procedure || !body.statusId);
+  if (missingReservationFields || missingSurgeryFields) {
+    setFormMessage(message, body.isReserved ? 'Informe data, horário e médica para reservar.' : 'Preencha paciente, cirurgia e status. Data, horário, médica e hospital podem ficar em branco.');
     return;
   }
   submit.disabled = true;
