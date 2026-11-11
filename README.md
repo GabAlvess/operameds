@@ -1,25 +1,28 @@
 # OperaMeds
 
-Aplicação web para organizar cirurgias, agendas e cadastros de apoio no MongoDB.
+Aplicação web para organizar cirurgias, agenda e acompanhamento financeiro, com dados armazenados no MongoDB.
 
-## Requisitos e inicialização
+## Requisitos e execução local
 
 - Node.js 20.6 ou superior
-- Cluster MongoDB Atlas configurado no `.env`
+- MongoDB Atlas ou outra instância MongoDB
 
-O arquivo `.env` deve conter `MONGODB_URI`. O nome do banco é `operamed` por padrão; para usar outro, defina `MONGODB_DB`. A variável opcional `PORT` define a porta HTTP (padrão `3000`). Não compartilhe nem versione o `.env`.
+Copie `.env.example` para `.env` e informe `MONGODB_URI`. `MONGODB_DB` é opcional (padrão: `operamed`) e `PORT` define a porta HTTP (padrão: `3000`). Não compartilhe nem versione `.env`.
 
 ```sh
 npm install
 npm start
 ```
 
-Abra `http://localhost:3000`. A tela de login usa contas de acesso armazenadas separadamente dos funcionários internos. Para configurar a primeira conta autorizada, envie localmente `POST /api/access/bootstrap` com `username` e `pin` (exatamente 4 dígitos); essa rota só aceita conexões deste computador e só funciona enquanto a coleção `users` estiver vazia. Depois, usuários autenticados podem cadastrar novas contas por `POST /api/users`. Não há usuários de demonstração. A rota `GET /api/health` informa se o banco está conectado.
+Abra `http://localhost:3000`. O login usa nome de usuário e PIN numérico de quatro dígitos; PINs são armazenados com hash. Não há usuários de demonstração. O endpoint local `/api/access/bootstrap` só configura a primeira conta quando a coleção `users` está vazia.
 
-## Configurações e cirurgias
+## Funcionalidades
 
-**Configurações** contém somente as abas Médicas / Cirurgiões, Status das Cirurgias, Cidades e Funcionários. Médicas, status e cidades podem ser adicionados, editados e ativados ou desativados; os nomes são únicos por categoria, sem distinção entre maiúsculas e minúsculas. Status também possuem cor. Funcionários são cadastros internos e não são contas de acesso. Contas autorizadas ficam na coleção separada `users`; seus PINs são armazenados com hash.
+- **Painel Inicial:** resumo das cirurgias cadastradas e próximas datas.
+- **Agenda Simplificada:** calendário mensal, filtros por médica, cidade e status, reservas de horário, prévia de compartilhamento e impressão/PDF.
+- **Gestão Completa:** cartões de cirurgia, filtros por mês, médica, cidade, status e paciente; indicadores financeiros e acesso ao formulário de edição.
+- **Configurações:** abas Médicas / Cirurgiões, Orçamentistas, Funcionários (contas de acesso), Status e Comissões. Cidades e procedimentos arquivados ficam em seções recolhíveis junto às médicas. As alterações administrativas são protegidas por permissões no servidor.
+- **Cirurgias:** cadastro e edição compartilham o mesmo formulário. Hospital é informado em texto livre. Reservas aparecem na Agenda Simplificada e não entram na Gestão Completa nem nas comissões.
+- **Comissões:** visualização mensal das cirurgias elegíveis, calculadas a 2% somente quando o status é realizado e há orçamentista vinculado.
 
-Em **Gestão Completa** ou **Agenda Simplificada**, use **+ Nova Cirurgia** para abrir o mesmo formulário. Informe data, horário, paciente, procedimento, hospital, médica, cidade opcional, funcionário responsável e status. Um horário pode ser reservado sem paciente, funcionário ou status operacional. A agenda permite filtrar por mês, médica, hospital, status e paciente; clicar em um registro abre o formulário existente para edição. A prévia de compartilhamento omite nome do paciente, anestesista e dados administrativos e pode ser impressa ou salva como PDF pelo navegador.
-
-Os dados ficam no mesmo banco MongoDB, nas coleções `settings_options`, `employees`, `users`, `sessions` e `surgeries`. Não são inseridos cadastros de exemplo automaticamente. Hospitais são informados diretamente no formulário; não há aba de hospitais. Desativar itens não remove nem altera os registros de cirurgia existentes.
+Os dados usam o banco existente, nas coleções MongoDB de configurações, orçamentistas, usuários, sessões e cirurgias. Desativar cadastros não remove vínculos históricos.
