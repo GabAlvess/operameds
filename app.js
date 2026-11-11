@@ -809,7 +809,12 @@ function renderMonthPicker(inputId, draftYear = null) {
   const input = document.getElementById(inputId);
   const [year, month] = (input.value || monthValue()).split('-').map(Number);
   const prefix = inputId.slice(0, -'Month'.length);
-  document.getElementById(prefix + 'MonthDisplay').textContent = monthPickerLabels[month - 1] + '/' + year;
+  document.getElementById(prefix + 'MonthDisplay').textContent = input.value ? monthPickerLabels[month - 1] + '/' + year : 'Todos';
+  const allMonthsButton = document.getElementById(prefix + 'MonthAll');
+  if (allMonthsButton) {
+    allMonthsButton.classList.toggle('selected', !input.value);
+    allMonthsButton.setAttribute('aria-pressed', String(!input.value));
+  }
   const yearSelect = document.getElementById(prefix + 'MonthYear');
   const selectedYear = Number(draftYear) || year;
   if (!yearSelect.options.length) {
@@ -829,8 +834,9 @@ function renderMonthPicker(inputId, draftYear = null) {
     button.type = 'button';
     button.className = 'month-picker-option';
     button.textContent = monthLabel;
-    button.setAttribute('aria-pressed', String(selectedYear === year && index + 1 === month));
-    if (selectedYear === year && index + 1 === month) button.classList.add('selected');
+    const isSelected = Boolean(input.value) && selectedYear === year && index + 1 === month;
+    button.setAttribute('aria-pressed', String(isSelected));
+    if (isSelected) button.classList.add('selected');
     button.addEventListener('click', () => {
       input.value = selectedYear + '-' + String(index + 1).padStart(2, '0');
       input.dispatchEvent(new Event('change', { bubbles: true }));
@@ -870,6 +876,15 @@ function populateFilter(select, entries, allLabel, selectedValue) {
   if ([...select.options].some((option) => option.value === selectedValue)) select.value = selectedValue;
 }
 
+function availableCityFilterOptions() {
+  const cityOptions = [...optionsByType.cities.filter((item) => item.active)];
+  surgeries.forEach((surgery) => {
+    if (!surgery.cityId || !surgery.city?.name || cityOptions.some((option) => option.id === surgery.cityId)) return;
+    cityOptions.push({ id: surgery.cityId, name: surgery.city.name, active: true });
+  });
+  return cityOptions.map((item) => ({ value: item.id, label: item.name }));
+}
+
 function populateAgendaFilters() {
   const doctor = document.getElementById('agendaDoctorFilter');
   const city = document.getElementById('agendaCityFilter');
@@ -878,7 +893,7 @@ function populateAgendaFilters() {
   const selectedCity = city.value;
   const selectedStatus = status.value;
   populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todas', selectedDoctor);
-  populateFilter(city, optionsByType.cities.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todas', selectedCity);
+  populateFilter(city, availableCityFilterOptions(), 'Todas', selectedCity);
   status.replaceChildren();
   const all = document.createElement('option');
   all.value = '';
@@ -1040,6 +1055,7 @@ const managementIcons = {
   time: 'schedule',
   staff: 'badge',
   hospital: 'local_hospital',
+  location: 'location_on',
   doctor: 'medical_services',
   surgery: 'healing',
   notes: 'notes',
@@ -1089,7 +1105,7 @@ function populateManagementFilters() {
   const selectedCity = city.value;
   const selectedStatus = status.value;
   populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todas as médicas', selectedDoctor);
-  populateFilter(city, optionsByType.cities.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todas as cidades', selectedCity);
+  populateFilter(city, availableCityFilterOptions(), 'Todas as cidades', selectedCity);
   status.replaceChildren();
   const all = document.createElement('option');
   all.value = '';
@@ -1205,6 +1221,7 @@ function createSurgeryCard(surgery) {
     createManagementGroup([
       ['staff', 'Orçamentista', surgery.employeeName || surgery.employee?.name],
       ['hospital', 'Hospital', surgery.hospital?.name],
+      ['location', 'Cidade', surgery.city?.name],
     ]),
     createManagementGroup([
       ['doctor', 'Médica', surgery.doctor?.name],
@@ -1289,7 +1306,8 @@ function renderSharePreview() {
   container.append(brand);
   const title = document.createElement('p');
   title.className = 'share-period';
-  title.textContent = document.getElementById('agendaMonth').value || '';
+  const selectedMonth = document.getElementById('agendaMonth').value;
+  title.textContent = selectedMonth || 'Todos os meses';
   container.append(title);
   const table = document.createElement('table');
   table.className = 'share-table';
@@ -1456,6 +1474,12 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   });
 });
 document.getElementById('agendaMonth').value = monthValue();
+document.getElementById('agendaMonthAll').addEventListener('click', () => {
+  document.getElementById('agendaMonth').value = '';
+  renderMonthPicker('agendaMonth');
+  renderAgenda();
+  closeMonthPicker('agenda');
+});
 ['managementMonth', 'managementDoctorFilter', 'managementCityFilter', 'managementStatusFilter', 'managementPatientSearch'].forEach((id) => {
   document.getElementById(id).addEventListener(id === 'managementPatientSearch' ? 'input' : 'change', (event) => {
     if (id === 'managementMonth') enforceMonthMinimum(event.currentTarget);
