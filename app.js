@@ -265,11 +265,13 @@ function renderOptionList(type) {
     row.className = 'option-row' + (option.active ? '' : ' inactive');
     const main = document.createElement('div');
     main.className = 'option-main';
-    if (type === 'statuses') {
+    if (type === 'statuses' || type === 'doctors') {
       const swatch = document.createElement('span');
       swatch.className = 'color-swatch';
-      swatch.style.backgroundColor = option.color || '#8a989f';
-      swatch.setAttribute('aria-label', 'Cor ' + (option.color || 'não definida'));
+      const color = type === 'statuses' ? option.color || '#8a989f' : option.agendaBlockColor || defaultDoctorBlockColor(option.name, option.id);
+      swatch.style.backgroundColor = color;
+      swatch.setAttribute('aria-label', (type === 'doctors' ? 'Cor do bloqueio ' : 'Cor ') + (color || 'não definida'));
+      if (type === 'doctors') swatch.title = 'Cor do Bloqueio de Agenda: ' + color;
       main.append(swatch);
     }
     const name = document.createElement('strong');
@@ -585,9 +587,12 @@ function openOptionDialog(type, option = null) {
   form.elements.name.value = option?.name || '';
   form.elements.active.checked = option ? option.active : true;
   form.elements.color.value = option?.color || '#18aaa7';
+  form.elements.agendaBlockColor.value = option?.agendaBlockColor || defaultDoctorBlockColor(option?.name, option?.id);
+  form.elements.agendaBlockColor.required = type === 'doctors';
   form.elements.commissionEligible.checked = option?.commissionEligible === true;
   document.getElementById('optionDialogTitle').textContent = (option ? 'Editar ' : 'Adicionar ') + optionLabels[type];
   document.getElementById('statusColorField').hidden = type !== 'statuses';
+  document.getElementById('doctorBlockColorField').hidden = type !== 'doctors';
   document.getElementById('statusCommissionField').hidden = type !== 'statuses';
   setFormMessage(document.getElementById('optionFormMessage'), '');
   document.getElementById('optionDialog').showModal();
@@ -597,7 +602,7 @@ function openOptionDialog(type, option = null) {
 async function toggleOption(option) {
   if (!isAdmin()) { showToast('Acesso somente para administradores.', 'error'); return; }
   try {
-    await api('/api/settings/' + option.id, { method: 'PUT', body: JSON.stringify({ name: option.name, color: option.color, active: !option.active, commissionEligible: option.commissionEligible === true }) });
+    await api('/api/settings/' + option.id, { method: 'PUT', body: JSON.stringify({ name: option.name, color: option.color, agendaBlockColor: option.agendaBlockColor || (option.type === 'doctors' ? defaultDoctorBlockColor(option.name, option.id) : null), active: !option.active, commissionEligible: option.commissionEligible === true }) });
     await Promise.all([loadSettings(true), loadSurgeries(false, true)]);
     showToast(option.name + (option.active ? ' desativado' : ' ativado') + ' com sucesso.');
   } catch (error) { showToast(error.message, 'error'); }
@@ -608,7 +613,7 @@ async function saveOption(event) {
   if (!isAdmin()) { showToast('Acesso somente para administradores.', 'error'); return; }
   const form = event.currentTarget;
   const type = editingOption.type;
-  const body = { type, name: form.elements.name.value, active: form.elements.active.checked, color: type === 'statuses' ? form.elements.color.value : null, commissionEligible: type === 'statuses' && form.elements.commissionEligible.checked };
+  const body = { type, name: form.elements.name.value, active: form.elements.active.checked, color: type === 'statuses' ? form.elements.color.value : null, agendaBlockColor: type === 'doctors' ? form.elements.agendaBlockColor.value : null, commissionEligible: type === 'statuses' && form.elements.commissionEligible.checked };
   const submit = form.querySelector('[type="submit"]');
   const message = document.getElementById('optionFormMessage');
   submit.disabled = true;
@@ -1247,6 +1252,40 @@ function normalizeEmployeeName(value) {
   return String(value || '').trim().replace(/\s+/g, ' ').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 }
 
+const agendaBlockColorOptions = [
+  { color: '#EDE4FF', text: '#59359A', border: '#D7C7F2' },
+  { color: '#DCEEFF', text: '#205D99', border: '#BEDBFA' },
+  { color: '#DCF5E5', text: '#216B45', border: '#BFE7CC' },
+  { color: '#FCE5D6', text: '#80512C', border: '#F2D0B9' },
+  { color: '#FFF2C6', text: '#725C16', border: '#F0E2AC' },
+  { color: '#FCE1EB', text: '#8B3E60', border: '#F0C6D5' },
+  { color: '#DDF5F2', text: '#176B67', border: '#BDE4DF' },
+  { color: '#E5EAFB', text: '#445487', border: '#CBD5F2' },
+  { color: '#E8F1D5', text: '#486125', border: '#D3E1B7' },
+];
+
+function defaultDoctorBlockColor(name, id = '') {
+  const normalized = normalizeEmployeeName(name).replace(/^(?:dra?|dr)\.?\s*/, '');
+  if (normalized.startsWith('victoria')) return '#EDE4FF';
+  if (normalized.startsWith('talissa')) return '#DCEEFF';
+  if (normalized.startsWith('rafael')) return '#DCF5E5';
+  const key = String(id || normalized);
+  if (!key) return '';
+  let hash = 2166136261;
+  for (let index = 0; index < key.length; index += 1) hash = Math.imul(hash ^ key.charCodeAt(index), 16777619);
+  const otherColors = agendaBlockColorOptions.slice(3);
+  return otherColors[(hash >>> 0) % otherColors.length].color;
+}
+
+function setAgendaBlockColors(row, surgery) {
+  const doctor = optionsByType.doctors.find((item) => item.id === surgery.doctorId) || surgery.doctor || {};
+  const color = doctor.agendaBlockColor || defaultDoctorBlockColor(doctor.name, surgery.doctorId || doctor.id);
+  const palette = agendaBlockColorOptions.find((item) => item.color.toLocaleLowerCase() === String(color).toLocaleLowerCase());
+  row.style.setProperty('--agenda-block-background', color || '#EDE4FF');
+  row.style.setProperty('--agenda-block-foreground', palette?.text || '#33485A');
+  row.style.setProperty('--agenda-block-border', palette?.border || color || '#D7C7F2');
+}
+
 function renderAgenda() {
   const tbody = document.getElementById('agendaRows');
   if (!tbody) return;
@@ -1285,6 +1324,7 @@ function renderAgenda() {
     const row = document.createElement('tr');
     const agendaBlock = isAgendaBlockRecord(surgery);
     row.className = 'agenda-data-row' + (agendaBlock ? ' agenda-block-row' : surgery.isReserved ? ' reserved-row' : '');
+    if (agendaBlock) setAgendaBlockColors(row, surgery);
     row.tabIndex = 0;
     row.setAttribute('aria-label', (agendaBlock ? 'Bloqueio de Agenda: ' + surgery.reservationName : surgery.isReserved ? 'Horário reservado' : surgery.patient) + ', ' + dateLabel(surgery.date) + ', ' + (surgery.time || 'sem horário') + '. Clique para editar.');
     row.addEventListener('click', () => openSurgeryFromRow(surgery));
@@ -1670,7 +1710,10 @@ function renderSharePreview() {
       body.append(group);
     }
     const row = document.createElement('tr');
-    if (isAgendaBlockRecord(surgery)) row.className = 'agenda-block-row';
+    if (isAgendaBlockRecord(surgery)) {
+      row.className = 'agenda-block-row';
+      setAgendaBlockColors(row, surgery);
+    }
     appendCell(row, surgery.time);
     appendCell(row, isAgendaBlockRecord(surgery) ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient);
     appendCell(row, surgery.doctor?.name);

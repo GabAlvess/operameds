@@ -153,17 +153,23 @@ function validateOption(body) {
   if (body.type === 'statuses' && !/^#[\da-f]{6}$/i.test(color || '')) {
     throw Object.assign(new Error('Escolha uma cor válida para o status.'), { status: 400 });
   }
-  return {
+  const agendaBlockColor = body.type === 'doctors' ? body.agendaBlockColor : null;
+  if (body.type === 'doctors' && agendaBlockColor != null && !/^#[\da-f]{6}$/i.test(agendaBlockColor)) {
+    throw Object.assign(new Error('Escolha uma cor válida para o bloqueio de agenda.'), { status: 400 });
+  }
+  const value = {
     name,
     nameKey: normalizedName(name),
     color,
     active: body.active !== false,
     commissionEligible: body.type === 'statuses' && body.commissionEligible === true,
   };
+  if (body.type === 'doctors') value.agendaBlockColor = agendaBlockColor;
+  return value;
 }
 
 function serializeOption(option) {
-  return { id: option._id.toString(), type: option.type, name: option.name, color: option.color || null, active: option.active !== false, commissionEligible: option.type === 'statuses' && option.commissionEligible === true };
+  return { id: option._id.toString(), type: option.type, name: option.name, color: option.color || null, agendaBlockColor: option.type === 'doctors' ? option.agendaBlockColor || null : null, active: option.active !== false, commissionEligible: option.type === 'statuses' && option.commissionEligible === true };
 }
 
 function isDuplicateError(error) {
@@ -754,7 +760,7 @@ async function handleRequest(request, response) {
       const id = new ObjectId(optionMatch[1]);
       const current = await options.findOne({ _id: id });
       if (!current) throw Object.assign(new Error('Item não encontrado.'), { status: 404 });
-      const value = validateOption({ ...body, type: current.type });
+      const value = validateOption({ ...body, type: current.type, agendaBlockColor: current.type === 'doctors' ? (body.agendaBlockColor ?? current.agendaBlockColor ?? null) : null });
       try {
         await options.updateOne({ _id: id }, { $set: { ...value, updatedAt: new Date() } });
         const updated = await options.findOne({ _id: id });

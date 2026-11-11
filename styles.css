@@ -249,10 +249,10 @@
 @media print{body.printing-agenda #page-agenda .agenda-heading:before{content:'OperaMeds · Organização Cirúrgica';display:block;margin:0 0 5px;color:#167f85;font-size:10px;font-weight:700;letter-spacing:.2px}}
 
 /* Bloqueios de Agenda */
-.agenda-data-row.agenda-block-row,.agenda-data-row.agenda-block-row:hover{background:#EDE4FF}
-.agenda-data-row.agenda-block-row td,.agenda-data-row.agenda-block-row:hover td{background:#EDE4FF!important;color:#59359A!important;border-color:#dccdf5}
+.agenda-data-row.agenda-block-row,.agenda-data-row.agenda-block-row:hover{background:var(--agenda-block-background,#EDE4FF)}
+.agenda-data-row.agenda-block-row td,.agenda-data-row.agenda-block-row:hover td{background:var(--agenda-block-background,#EDE4FF)!important;color:var(--agenda-block-foreground,#59359A)!important;border-color:var(--agenda-block-border,#dccdf5);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 .agenda-data-row.agenda-block-row:focus{outline-color:#8e6dc4}
-.agenda-block-type{display:inline-flex;align-items:center;gap:6px;color:#59359A;font-size:10px;font-weight:700;white-space:nowrap}
+.agenda-block-type{display:inline-flex;align-items:center;gap:6px;color:var(--agenda-block-foreground,#59359A);font-size:10px;font-weight:700;white-space:nowrap}
 .agenda-block-type .material-symbols{font-size:17px;line-height:1}
 #surgeryDialog.agenda-block-dialog{width:min(560px,calc(100vw - 30px))}
 #surgeryProcedureSection[hidden],#agendaBlockFields[hidden]{display:none}
@@ -293,7 +293,7 @@
 #agendaMonthPopover{width:min(360px,calc(100vw - 42px))}
 #agendaMonthYear{width:90px;height:34px;padding:0 8px;border:1px solid #dce6e9;border-radius:7px;background:#f8fbfc;color:#24475a;font:inherit;font-size:12px;font-weight:600}
 .agenda-month-selection{max-height:62px;overflow:auto;margin-top:9px;color:#71818c;font-size:10px;line-height:1.45}
-.share-table tr.agenda-block-row td{background:#EDE4FF;color:#59359A;border-color:#dccdf5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+.share-table tr.agenda-block-row td{background:var(--agenda-block-background,#EDE4FF);color:var(--agenda-block-foreground,#59359A);border-color:var(--agenda-block-border,#dccdf5);-webkit-print-color-adjust:exact;print-color-adjust:exact}
 #page-gestao .surgery-card{padding:10px 12px 9px;border-radius:12px}
 #page-gestao .surgery-card-header{padding:0 1px 8px;gap:10px}
 #page-gestao .surgery-card-patient{gap:8px}
