@@ -134,6 +134,13 @@ function normalizedStatusName(surgery) {
   return (surgery.status?.name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('pt-BR');
 }
 
+function isAgendaBlockRecord(surgery) {
+  if (!surgery) return false;
+  if (surgery.isAgendaBlock || surgery.recordType === 'agenda_block') return true;
+  return surgery.recordType === 'reservation' && surgery.isReserved === true
+    && !String(surgery.patient || '').trim() && Boolean(String(surgery.reservationName || '').trim());
+}
+
 function commissionEligible(surgery) {
   if (!surgery || surgery.isReserved || surgery.isAgendaBlock || surgery.recordType === 'reservation' || surgery.recordType === 'agenda_block') return false;
   return surgery.status?.commissionEligible === true || ['realizado', 'realizada'].includes(normalizedStatusName(surgery));
@@ -496,7 +503,7 @@ async function confirmArchiveSurgery() {
 }
 
 function requestDeleteAgendaBlock() {
-  if (!editingSurgery?.isAgendaBlock) return;
+  if (!isAgendaBlockRecord(editingSurgery)) return;
   pendingAgendaBlockDelete = editingSurgery;
   document.getElementById('deleteAgendaBlockDialog').showModal();
 }
@@ -727,7 +734,7 @@ function syncReservationFields() {
   if (reserveToggle) reserveToggle.hidden = Boolean(editingSurgery);
   document.getElementById('surgeryDialogTitle').textContent = newBlockMode ? (editingSurgery ? 'Editar Bloqueio' : 'Bloqueio de Agenda') : legacyReservation ? 'Editar Horário Reservado' : editingSurgery ? 'Editar Cirurgia' : 'Nova Cirurgia';
   document.querySelector('#surgeryForm [type="submit"]').textContent = legacyReservation ? 'Salvar Horário Reservado' : newBlockMode ? 'Salvar Bloqueio' : editingSurgery ? 'Salvar Alterações' : 'Salvar Cirurgia';
-  document.getElementById('deleteAgendaBlockButton').hidden = !editingSurgery?.isAgendaBlock;
+  document.getElementById('deleteAgendaBlockButton').hidden = !isAgendaBlockRecord(editingSurgery);
 }
 
 function currentSurgeryFormState() {
@@ -1046,7 +1053,7 @@ function filteredAgenda() {
     if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
     if (city && surgery.cityId !== city) return false;
-    if (surgery.isAgendaBlock) return true;
+    if (isAgendaBlockRecord(surgery)) return true;
     if (status === 'reserved' && !surgery.isReserved) return false;
     if (status && status !== 'reserved' && (surgery.isReserved || surgery.statusId !== status)) return false;
     return true;
@@ -1095,36 +1102,37 @@ function renderAgenda() {
       tbody.append(group);
     }
     const row = document.createElement('tr');
-    row.className = 'agenda-data-row' + (surgery.isAgendaBlock ? ' agenda-block-row' : surgery.isReserved ? ' reserved-row' : '');
+    const agendaBlock = isAgendaBlockRecord(surgery);
+    row.className = 'agenda-data-row' + (agendaBlock ? ' agenda-block-row' : surgery.isReserved ? ' reserved-row' : '');
     row.tabIndex = 0;
-    row.setAttribute('aria-label', (surgery.isAgendaBlock ? 'Bloqueio de Agenda: ' + surgery.reservationName : surgery.isReserved ? 'Horário reservado' : surgery.patient) + ', ' + dateLabel(surgery.date) + ', ' + (surgery.time || 'sem horário') + '. Clique para editar.');
+    row.setAttribute('aria-label', (agendaBlock ? 'Bloqueio de Agenda: ' + surgery.reservationName : surgery.isReserved ? 'Horário reservado' : surgery.patient) + ', ' + dateLabel(surgery.date) + ', ' + (surgery.time || 'sem horário') + '. Clique para editar.');
     row.addEventListener('click', () => openSurgeryFromRow(surgery));
     row.addEventListener('keydown', (event) => {
       if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSurgeryFromRow(surgery); }
     });
     appendCell(row, surgery.date ? dateLabel(surgery.date) : '—');
     appendCell(row, surgery.time);
-    appendCell(row, surgery.isAgendaBlock ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient, surgery.isReserved && !surgery.isAgendaBlock ? 'reserved-copy' : '');
+    appendCell(row, agendaBlock ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient, surgery.isReserved && !agendaBlock ? 'reserved-copy' : '');
     appendCell(row, surgery.doctor?.name);
     const hospitalCell = document.createElement('td');
     row.append(hospitalCell);
-    if (!surgery.isAgendaBlock) {
+    if (!agendaBlock) {
       const hospitalName = document.createElement('strong');
       hospitalName.textContent = surgery.hospital?.name || '—';
       hospitalCell.append(hospitalName);
     }
-    if (!surgery.isAgendaBlock && surgery.city?.name) {
+    if (!agendaBlock && surgery.city?.name) {
       const city = document.createElement('small');
       city.textContent = surgery.city.name;
       hospitalCell.append(city);
     }
-    if (surgery.isAgendaBlock) { row.append(document.createElement('td'), document.createElement('td')); }
+    if (agendaBlock) { row.append(document.createElement('td'), document.createElement('td')); }
     else {
       appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
       appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
     }
     const statusCell = document.createElement('td');
-    if (surgery.isAgendaBlock) {
+    if (agendaBlock) {
       const blockType = document.createElement('span');
       blockType.className = 'agenda-block-type';
       const icon = document.createElement('span');
@@ -1429,9 +1437,9 @@ function renderSharePreview() {
     appendCell(row, surgery.time);
     appendCell(row, surgery.doctor?.name);
     appendCell(row, surgery.hospital?.name);
-    appendCell(row, surgery.isAgendaBlock ? surgery.reservationName : surgery.isReserved ? '—' : surgery.procedure);
+    appendCell(row, isAgendaBlockRecord(surgery) ? surgery.reservationName : surgery.isReserved ? '—' : surgery.procedure);
     const statusCell = document.createElement('td');
-    if (surgery.isAgendaBlock) {
+    if (isAgendaBlockRecord(surgery)) {
       const blockType = document.createElement('span');
       blockType.className = 'agenda-block-type';
       const icon = document.createElement('span');

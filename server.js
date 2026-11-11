@@ -122,6 +122,13 @@ function normalizedName(value) {
   return value.trim().replace(/\s+/g, ' ').toLocaleLowerCase('pt-BR');
 }
 
+function isStoredAgendaBlock(surgery) {
+  if (!surgery) return false;
+  if (surgery.recordType === 'agenda_block') return true;
+  return surgery.recordType === 'reservation' && surgery.isReserved === true
+    && !String(surgery.patient || '').trim() && Boolean(String(surgery.reservationName || '').trim());
+}
+
 function validateOption(body) {
   const name = typeof body.name === 'string' ? body.name.trim().replace(/\s+/g, ' ') : '';
   if (!name) throw Object.assign(new Error('Informe o nome.'), { status: 400 });
@@ -762,8 +769,8 @@ async function handleRequest(request, response) {
       const id = new ObjectId(blockDeleteMatch[1]);
       const current = await collections.surgeries.findOne({ _id: id });
       if (!current) throw Object.assign(new Error('Bloqueio de agenda não encontrado.'), { status: 404 });
-      if (current.recordType !== 'agenda_block') throw Object.assign(new Error('Somente bloqueios de agenda podem ser excluídos por esta ação.'), { status: 400 });
-      await collections.surgeries.deleteOne({ _id: id, recordType: 'agenda_block' });
+      if (!isStoredAgendaBlock(current)) throw Object.assign(new Error('Somente bloqueios de agenda podem ser excluídos por esta ação.'), { status: 400 });
+      await collections.surgeries.deleteOne({ _id: id });
       sendJson(response, 200, { deleted: true });
       return;
     }
@@ -789,8 +796,8 @@ async function handleRequest(request, response) {
       const current = await collections.surgeries.findOne({ _id: id });
       if (!current) throw Object.assign(new Error('Cirurgia não encontrada.'), { status: 404 });
       if (request.method === 'DELETE') {
-        if (current.recordType !== 'agenda_block') throw Object.assign(new Error('Somente bloqueios de agenda podem ser excluídos por esta ação.'), { status: 400 });
-        await collections.surgeries.deleteOne({ _id: id, recordType: 'agenda_block' });
+        if (!isStoredAgendaBlock(current)) throw Object.assign(new Error('Somente bloqueios de agenda podem ser excluídos por esta ação.'), { status: 400 });
+        await collections.surgeries.deleteOne({ _id: id });
         sendJson(response, 200, { deleted: true });
         return;
       }
