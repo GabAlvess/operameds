@@ -158,10 +158,7 @@ function renderDashboard() {
   const reservationCount = surgeries.filter((surgery) => surgery.isReserved).length;
   const confirmed = surgeriesOnly.filter((surgery) => normalizedStatusName(surgery).includes('confirm')).length;
   const completed = surgeriesOnly.filter((surgery) => normalizedStatusName(surgery).includes('realiz')).length;
-  const pending = surgeriesOnly.filter((surgery) => {
-    const status = normalizedStatusName(surgery);
-    return !status.includes('realiz') && !status.includes('cancel');
-  }).length;
+  const pending = surgeriesOnly.filter((surgery) => normalizedStatusName(surgery).startsWith('confirmad')).length;
   document.getElementById('dashboardScheduled').textContent = String(surgeriesOnly.length);
   document.getElementById('dashboardConfirmed').textContent = String(confirmed);
   document.getElementById('dashboardCompleted').textContent = String(completed);
@@ -1384,11 +1381,12 @@ function renderSurgeries() {
   document.getElementById('managementSurgeryCount').textContent = String(surgeriesOnly.length);
   const totals = surgeriesOnly.map((item) => managementMoney(item.totalAmount));
   const deposits = surgeriesOnly.map((item) => managementMoney(item.depositPaid));
-  const totalsComplete = surgeriesOnly.length > 0 && totals.every((value) => value !== null);
-  document.getElementById('managementTotalValue').textContent = totalsComplete ? managementMoneyLabel(totals.reduce((sum, value) => sum + value, 0)) : '—';
-  document.getElementById('managementPendingValue').textContent = totalsComplete
-    ? managementMoneyLabel(totals.reduce((sum, value, index) => sum + Math.max(value - (deposits[index] ?? 0), 0), 0))
-    : '—';
+  const knownTotalIndexes = totals.flatMap((value, index) => value === null ? [] : [index]);
+  const hasKnownTotals = knownTotalIndexes.length > 0;
+  const totalValue = knownTotalIndexes.reduce((sum, index) => sum + totals[index], 0);
+  const pendingValue = knownTotalIndexes.reduce((sum, index) => sum + Math.max(totals[index] - (deposits[index] ?? 0), 0), 0);
+  document.getElementById('managementTotalValue').textContent = hasKnownTotals ? managementMoneyLabel(totalValue) : '—';
+  document.getElementById('managementPendingValue').textContent = hasKnownTotals ? managementMoneyLabel(pendingValue) : '—';
 }
 
 function renderSharePreview() {
