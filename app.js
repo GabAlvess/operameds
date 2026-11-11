@@ -973,7 +973,7 @@ function populateAgendaFilters() {
   const selectedDoctor = doctor.value;
   const selectedCity = city.value;
   const selectedStatus = status.value;
-  populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todas', selectedDoctor);
+  populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todos os cirurgiões', selectedDoctor);
   populateFilter(city, availableCityFilterOptions(), 'Todas', selectedCity);
   status.replaceChildren();
   const all = document.createElement('option');
@@ -1203,7 +1203,7 @@ function populateManagementFilters() {
   const selectedDoctor = doctor.value;
   const selectedCity = city.value;
   const selectedStatus = status.value;
-  populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todas as médicas', selectedDoctor);
+  populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todos os cirurgiões', selectedDoctor);
   populateFilter(city, availableCityFilterOptions(), 'Todas as cidades', selectedCity);
   status.replaceChildren();
   const all = document.createElement('option');
