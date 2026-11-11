@@ -969,7 +969,30 @@ function renderMonthPicker(inputId, draftYear = null) {
     allButton.classList.toggle('selected', !months.length);
     allButton.setAttribute('aria-pressed', String(!months.length));
     const selection = document.getElementById('agendaMonthSelection');
-    selection.textContent = months.length ? months.map((value) => agendaMonthLabel(value)).join(' · ') : 'Nenhum mês selecionado: exibindo todos os meses.';
+    selection.textContent = months.length ? months.length + (months.length === 1 ? ' mês selecionado.' : ' meses selecionados.') : 'Nenhum mês selecionado: exibindo todos os meses.';
+    const chips = document.getElementById('agendaMonthChips');
+    chips.replaceChildren();
+    chips.hidden = months.length === 0;
+    months.forEach((value) => {
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'agenda-month-chip';
+      const label = agendaMonthLabel(value, true);
+      chip.setAttribute('aria-label', 'Remover ' + label + ' da seleção');
+      const text = document.createElement('span');
+      text.textContent = label.charAt(0).toLocaleUpperCase('pt-BR') + label.slice(1);
+      const removeIcon = document.createElement('span');
+      removeIcon.className = 'material-symbols';
+      removeIcon.setAttribute('aria-hidden', 'true');
+      removeIcon.textContent = 'close';
+      chip.append(text, removeIcon);
+      chip.addEventListener('click', () => {
+        input.value = selectedAgendaMonths().filter((month) => month !== value).join(',');
+        renderMonthPicker('agendaMonth');
+        renderAgenda();
+      });
+      chips.append(chip);
+    });
     const grid = document.getElementById('agendaMonthGrid');
     grid.replaceChildren();
     monthPickerLabels.forEach((monthLabel, index) => {

@@ -265,7 +265,15 @@
 @media(max-width:700px){.surgery-return-grid{grid-template-columns:minmax(0,1fr)}.surgery-return-grid>.form-field{grid-column:1/-1}}
 
 /* Agenda com múltiplos períodos e empresas */
+#page-agenda .agenda-filters{align-items:start}
+#page-agenda .month-control{grid-template-columns:minmax(0,1fr)}
 .agenda-filters{grid-template-columns:repeat(6,minmax(0,1fr))}
+.agenda-month-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}
+.agenda-month-chips[hidden]{display:none}
+.agenda-month-chip{display:inline-flex;align-items:center;gap:4px;min-height:25px;padding:4px 7px;border:1px solid #b8dfdd;border-radius:999px;background:#eaf7f5;color:#176b70;font:inherit;font-size:10px;font-weight:600;line-height:1.1;white-space:nowrap;cursor:pointer;transition:background .14s,border-color .14s,color .14s}
+.agenda-month-chip:hover{border-color:#72c4c0;background:#d9f1ee;color:#105f65}
+.agenda-month-chip:focus-visible{outline:2px solid #18aaa7;outline-offset:2px}
+.agenda-month-chip .material-symbols{font-size:14px;line-height:1}
 .agenda-month-group td{height:37px;padding:8px 15px;background:#e7eef7;color:#173e57;font-size:12px;font-weight:800;letter-spacing:.45px}
 .agenda-print-meta{margin:0 0 8px;color:#526d7a;font-size:10px;font-weight:600}
 .agenda-company-cell{font-weight:600;white-space:nowrap}
@@ -279,3 +287,4 @@
 @media(max-width:1500px){.agenda-filters{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:700px){.agenda-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){.agenda-filters{grid-template-columns:1fr}}
+@media(max-width:430px){#page-agenda .month-control{grid-template-columns:minmax(0,1fr)}}
