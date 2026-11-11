@@ -24,7 +24,7 @@ No servidor da API, configure `OPERAMEDS_ALLOWED_ORIGINS` com a origem exata do 
 
 ## Deploy do backend no Render
 
-Crie manualmente um **Web Service** ligado a este repositório e selecione o plano Free. Use `npm ci` como Build Command, `npm start` como Start Command e `/healthz` como Health Check Path. O script `start` inicia somente `server.js`; localmente, `npm run start:local` carrega as variáveis de `.env`.
+Crie manualmente um **Web Service** ligado a este repositório e selecione o plano Free. Use `npm ci` como Build Command, `npm start` como Start Command e `/healthz` como Health Check Path. O script `start` passa `--api-only`, impedindo que o Render sirva o site; localmente, `npm run start:local` inicia site e API e carrega as variáveis de `.env`.
 
 Cadastre no ambiente do serviço `MONGODB_URI`, `OPERAMEDS_ALLOWED_ORIGINS` (a origem pública exata do front Vercel, sem caminho final, por exemplo `https://operameds.vercel.app`) e `OPERAMEDS_COOKIE_SAMESITE=None` para permitir cookies entre os dois domínios. `MONGODB_DB` usa `operamed` por padrão, e o Render fornece `PORT`. O script de build do Vercel é independente: `npm run build` gera apenas o front estático em `dist/`; o Start Command do Render não executa no Vercel.
 

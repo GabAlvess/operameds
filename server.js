@@ -7,6 +7,7 @@ const { MongoClient, ObjectId } = require('mongodb');
 
 const root = __dirname;
 const port = Number(process.env.PORT) || 3000;
+const apiOnlyMode = process.argv.includes('--api-only');
 const mongoUri = process.env.MONGODB_URI;
 const databaseName = process.env.MONGODB_DB || 'operamed';
 const allowedOrigins = new Set((process.env.OPERAMEDS_ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
@@ -761,7 +762,7 @@ async function handleRequest(request, response) {
     return;
   }
 
-  if (request.method !== 'GET' || !publicFiles.has(pathname)) {
+  if (apiOnlyMode || request.method !== 'GET' || !publicFiles.has(pathname)) {
     sendJson(response, 404, { error: 'Não encontrado.' });
     return;
   }
@@ -791,7 +792,7 @@ if (require.main === module) {
   } else {
     const server = http.createServer(handleRequest);
     server.listen(port, '0.0.0.0', () => {
-      console.log(`OperaMeds API disponível na porta ${port}`);
+      console.log(`OperaMeds ${apiOnlyMode ? 'API' : 'site e API'} disponível na porta ${port}`);
     });
 
     async function shutdown() {

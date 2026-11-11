@@ -5,7 +5,7 @@
   "description": "OperaMeds | Organização Cirúrgica",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
+    "start": "node server.js --api-only",
     "start:local": "node --env-file=.env server.js",
     "dev": "node --watch --env-file=.env server.js",
     "build": "node scripts/build-frontend.js"
