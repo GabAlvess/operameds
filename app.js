@@ -4,15 +4,23 @@ const breadcrumb = document.getElementById('crumbCurrent');
 const sidebar = document.getElementById('sidebar');
 const menuToggle = document.getElementById('menuToggle');
 const scrim = document.getElementById('sidebarScrim');
-const optionTypes = ['doctors', 'statuses', 'cities'];
-const optionLabels = { doctors: 'Médica / Cirurgião', statuses: 'Status da cirurgia', cities: 'Cidade' };
-const optionNouns = { doctors: 'médicas ou cirurgiões', statuses: 'status', cities: 'cidades' };
+const optionTypes = ['doctors', 'statuses', 'cities', 'companies'];
+const optionLabels = { doctors: 'Médica / Cirurgião', statuses: 'Status da cirurgia', cities: 'Cidade', companies: 'Empresa' };
+const optionNouns = { doctors: 'médicas ou cirurgiões', statuses: 'status', cities: 'cidades', companies: 'empresas' };
 const optionsByType = Object.fromEntries(optionTypes.map((type) => [type, []]));
 let accessUsers = [];
 let budgeters = [];
 let surgeries = [];
 let archivedSurgeries = [];
 let settingsLoaded = false;
+let settingsLoadedAt = 0;
+let settingsLoadPromise = null;
+let surgeriesLoadedAt = 0;
+let archivedSurgeriesLoadedAt = 0;
+let activeSurgeriesLoadPromise = null;
+let archivedSurgeriesLoadPromise = null;
+const SETTINGS_CACHE_MS = 20_000;
+const SURGERIES_CACHE_MS = 5_000;
 let currentEmployee = null;
 let editingOption = null;
 let editingEmployee = null;
@@ -95,20 +103,27 @@ function isPrimaryAdmin() {
   return currentEmployee?.isPrimaryAdmin === true;
 }
 
-async function loadSettings() {
-  const result = await Promise.all([api('/api/settings'), api('/api/budgeters')]);
-  optionTypes.forEach((type) => { optionsByType[type] = result[0].filter((item) => item.type === type); });
-  budgeters = result[1];
-  settingsLoaded = true;
-  optionTypes.forEach(renderOptionList);
-  renderBudgeterList();
-  document.querySelectorAll('[data-settings-tab="employees"]').forEach((tab) => { tab.hidden = !isAdmin(); });
-  document.querySelectorAll('#page-configuracoes .add-option, #addBudgeterButton, #addEmployeeButton').forEach((button) => { button.hidden = !isAdmin(); });
-  if (isAdmin() && accessUsers.length) renderEmployeeList();
-  populateAgendaFilters();
-  populateManagementFilters();
-  populateCommissionFilters();
-  renderCommissions();
+async function loadSettings(force = false) {
+  if (!force && settingsLoaded && Date.now() - settingsLoadedAt < SETTINGS_CACHE_MS) return;
+  if (!settingsLoadPromise) {
+    settingsLoadPromise = (async () => {
+      const result = await Promise.all([api('/api/settings'), api('/api/budgeters')]);
+      optionTypes.forEach((type) => { optionsByType[type] = result[0].filter((item) => item.type === type); });
+      budgeters = result[1];
+      settingsLoaded = true;
+      settingsLoadedAt = Date.now();
+      optionTypes.forEach(renderOptionList);
+      renderBudgeterList();
+      document.querySelectorAll('[data-settings-tab="employees"]').forEach((tab) => { tab.hidden = !isAdmin(); });
+      document.querySelectorAll('#page-configuracoes .add-option, #addBudgeterButton, #addEmployeeButton').forEach((button) => { button.hidden = !isAdmin(); });
+      if (isAdmin() && accessUsers.length) renderEmployeeList();
+      populateAgendaFilters();
+      populateManagementFilters();
+      populateCommissionFilters();
+      renderCommissions();
+    })().finally(() => { settingsLoadPromise = null; });
+  }
+  await settingsLoadPromise;
 }
 
 async function loadUsers() {
@@ -120,13 +135,31 @@ async function loadUsers() {
   renderEmployeeList();
 }
 
-async function loadSurgeries(includeArchived = false) {
-  const requests = [api('/api/surgeries')];
-  if (includeArchived) requests.push(api('/api/surgeries/archived'));
-  const result = await Promise.all(requests);
-  surgeries = result[0];
-  if (includeArchived) archivedSurgeries = result[1];
-  renderSurgeryViews();
+async function loadSurgeries(includeArchived = false, force = false) {
+  const requests = [];
+  let shouldRender = false;
+  if (force || Date.now() - surgeriesLoadedAt >= SURGERIES_CACHE_MS) {
+    if (!activeSurgeriesLoadPromise) {
+      activeSurgeriesLoadPromise = api('/api/surgeries').then((result) => {
+        surgeries = result;
+        surgeriesLoadedAt = Date.now();
+        shouldRender = true;
+      }).finally(() => { activeSurgeriesLoadPromise = null; });
+    }
+    requests.push(activeSurgeriesLoadPromise);
+  }
+  if (includeArchived && (force || Date.now() - archivedSurgeriesLoadedAt >= SURGERIES_CACHE_MS)) {
+    if (!archivedSurgeriesLoadPromise) {
+      archivedSurgeriesLoadPromise = api('/api/surgeries/archived').then((result) => {
+        archivedSurgeries = result;
+        archivedSurgeriesLoadedAt = Date.now();
+        shouldRender = true;
+      }).finally(() => { archivedSurgeriesLoadPromise = null; });
+    }
+    requests.push(archivedSurgeriesLoadPromise);
+  }
+  if (requests.length) await Promise.all(requests);
+  if (shouldRender) renderSurgeryViews();
 }
 
 function renderSurgeryViews() {
@@ -503,6 +536,8 @@ async function confirmArchiveSurgery() {
   try {
     await api('/api/surgeries/' + pendingArchive.id + '/archive', { method: 'POST', body: '{}' });
     document.getElementById('archiveConfirmDialog').close();
+    surgeriesLoadedAt = 0;
+    archivedSurgeriesLoadedAt = 0;
     await loadSurgeries(true);
     showToast('Procedimento arquivado.');
     pendingArchive = null;
@@ -525,6 +560,7 @@ async function confirmDeleteAgendaBlock() {
     closeSurgeryDialogNow();
     pendingAgendaBlockDelete = null;
     editingSurgery = null;
+    surgeriesLoadedAt = 0;
     await loadSurgeries();
     showToast('Bloqueio excluído da agenda.');
   } catch (error) { showToast(error.message, 'error'); }
@@ -534,6 +570,8 @@ async function confirmDeleteAgendaBlock() {
 async function restoreSurgery(surgery) {
   try {
     await api('/api/surgeries/' + surgery.id + '/restore', { method: 'POST', body: '{}' });
+    surgeriesLoadedAt = 0;
+    archivedSurgeriesLoadedAt = 0;
     await loadSurgeries(true);
     showToast('Procedimento restaurado para a Agenda e a Gestão.');
   } catch (error) { showToast(error.message, 'error'); }
@@ -560,7 +598,7 @@ async function toggleOption(option) {
   if (!isAdmin()) { showToast('Acesso somente para administradores.', 'error'); return; }
   try {
     await api('/api/settings/' + option.id, { method: 'PUT', body: JSON.stringify({ name: option.name, color: option.color, active: !option.active, commissionEligible: option.commissionEligible === true }) });
-    await Promise.all([loadSettings(), loadSurgeries()]);
+    await Promise.all([loadSettings(true), loadSurgeries(false, true)]);
     showToast(option.name + (option.active ? ' desativado' : ' ativado') + ' com sucesso.');
   } catch (error) { showToast(error.message, 'error'); }
 }
@@ -581,7 +619,7 @@ async function saveOption(event) {
       body: JSON.stringify(body),
     });
     document.getElementById('optionDialog').close();
-    await Promise.all([loadSettings(), loadSurgeries()]);
+    await Promise.all([loadSettings(true), loadSurgeries(false, true)]);
     showToast(optionLabels[type] + ' salvo com sucesso.');
   } catch (error) { setFormMessage(message, error.message); }
   finally { submit.disabled = false; }
@@ -612,7 +650,7 @@ async function saveBudgeter(event) {
   try {
     await api(editingBudgeter ? '/api/budgeters/' + editingBudgeter.id : '/api/budgeters', { method: editingBudgeter ? 'PUT' : 'POST', body: JSON.stringify(body) });
     document.getElementById('budgeterDialog').close();
-    await Promise.all([loadSettings(), loadSurgeries()]);
+    await Promise.all([loadSettings(true), loadSurgeries(false, true)]);
     showToast('Orçamentista salvo com sucesso.');
   } catch (error) { setFormMessage(message, error.message); }
   finally { submit.disabled = false; }
@@ -622,7 +660,7 @@ async function toggleBudgeter(budgeter) {
   if (!isAdmin()) { showToast('Acesso somente para administradores.', 'error'); return; }
   try {
     await api('/api/budgeters/' + budgeter.id, { method: 'PUT', body: JSON.stringify({ name: budgeter.name, active: !budgeter.active }) });
-    await Promise.all([loadSettings(), loadSurgeries()]);
+    await Promise.all([loadSettings(true), loadSurgeries(false, true)]);
     showToast('Orçamentista ' + budgeter.name + (budgeter.active ? ' desativado.' : ' ativado.'));
   } catch (error) { showToast(error.message, 'error'); }
 }
@@ -718,6 +756,7 @@ function syncReservationFields() {
   const doctorField = document.getElementById('doctorFormField');
   const newBlockMode = blockMode && !legacyReservation;
   document.getElementById(specialTime ? 'blockDoctorSlot' : 'normalDoctorSlot').append(doctorField);
+  document.getElementById(specialTime ? 'blockCompanySlot' : 'normalCompanySlot').append(document.getElementById('companyFormField'));
   document.getElementById(newBlockMode ? 'blockCitySlot' : 'normalCitySlot').append(document.getElementById('cityFormField'));
   form.classList.toggle('is-agenda-block', newBlockMode);
   document.getElementById('surgeryDialog').classList.toggle('agenda-block-dialog', newBlockMode);
@@ -797,6 +836,7 @@ function openSurgeryDialog(surgery = null) {
   form.elements.anesthetist.value = surgery?.anesthetist || '';
   form.elements.employeeName.value = surgery?.employeeName || surgery?.employee?.name || '';
   form.elements.hospitalName.value = surgery?.hospital?.name || '';
+  form.elements.convenio.value = surgery?.convenio || '';
   form.elements.reservationName.value = surgery?.reservationName || '';
   form.elements.phone.value = surgery?.phone || '';
   form.elements.consultationDate.value = surgery?.consultationDate || '';
@@ -807,6 +847,7 @@ function openSurgeryDialog(surgery = null) {
   form.elements.observations.value = surgery?.observations || '';
   form.elements.isAgendaBlock.checked = surgery?.isAgendaBlock === true || surgery?.isReserved === true;
   fillSelect(form.elements.doctorId, optionsByType.doctors, 'Médica / Cirurgião', surgery?.doctor, true);
+  fillSelect(form.elements.companyId, optionsByType.companies, 'Empresa', surgery?.company, true);
   const oldEmployeeName = normalizeEmployeeName(surgery?.employeeName || surgery?.employee?.name || '');
   const currentEmployeeOption = surgery?.employee || budgeters.find((item) => normalizeEmployeeName(item.name) === oldEmployeeName) || null;
   fillSelect(form.elements.employeeId, budgeters, 'Orçamentista', currentEmployeeOption, true);
@@ -873,6 +914,7 @@ async function saveSurgery(event) {
     const existingIndex = surgeries.findIndex((item) => item.id === savedSurgery.id);
     if (existingIndex < 0) surgeries.push(savedSurgery);
     else surgeries[existingIndex] = savedSurgery;
+    surgeriesLoadedAt = Date.now();
     closeSurgeryDialogNow();
     renderSurgeryViews();
     showToast(convertingReservation ? 'Horário convertido em cirurgia.' : editingSurgery ? (body.isAgendaBlock ? 'Bloqueio atualizado.' : 'Cirurgia atualizada com sucesso.') : body.isAgendaBlock ? 'Bloqueio de agenda salvo.' : body.isReserved ? 'Horário reservado com sucesso.' : 'Cirurgia cadastrada com sucesso.');
@@ -899,10 +941,59 @@ function enforceMonthMinimum(input) {
 
 const monthPickerLabels = ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun', 'Jul', 'Ago', 'Set', 'Out', 'Nov', 'Dez'];
 
+function selectedAgendaMonths() {
+  return document.getElementById('agendaMonth').value.split(',').filter((value) => /^\d{4}-(0[1-9]|1[0-2])$/.test(value)).sort();
+}
+
+function agendaMonthLabel(value, long = false) {
+  const [year, month] = value.split('-').map(Number);
+  const name = long
+    ? new Intl.DateTimeFormat('pt-BR', { month: 'long' }).format(new Date(year, month - 1, 1))
+    : monthPickerLabels[month - 1];
+  return name + '/' + year;
+}
+
 function renderMonthPicker(inputId, draftYear = null) {
   const input = document.getElementById(inputId);
-  const [year, month] = (input.value || monthValue()).split('-').map(Number);
   const prefix = inputId.slice(0, -'Month'.length);
+  if (inputId === 'agendaMonth') {
+    const months = selectedAgendaMonths();
+    const yearInput = document.getElementById('agendaMonthYear');
+    const draft = Number(draftYear) || Number(yearInput.value);
+    const selectedYear = Math.max(2022, Math.min(9999, draft || Number(months[0]?.slice(0, 4)) || new Date().getFullYear()));
+    yearInput.value = String(selectedYear);
+    document.getElementById('agendaMonthDisplay').textContent = !months.length
+      ? 'Todos os meses'
+      : months.length === 1 ? agendaMonthLabel(months[0]) : months.length + ' meses selecionados';
+    const allButton = document.getElementById('agendaMonthAll');
+    allButton.classList.toggle('selected', !months.length);
+    allButton.setAttribute('aria-pressed', String(!months.length));
+    const selection = document.getElementById('agendaMonthSelection');
+    selection.textContent = months.length ? months.map((value) => agendaMonthLabel(value)).join(' · ') : 'Nenhum mês selecionado: exibindo todos os meses.';
+    const grid = document.getElementById('agendaMonthGrid');
+    grid.replaceChildren();
+    monthPickerLabels.forEach((monthLabel, index) => {
+      const value = selectedYear + '-' + String(index + 1).padStart(2, '0');
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'month-picker-option';
+      button.textContent = monthLabel;
+      const isSelected = months.includes(value);
+      button.classList.toggle('selected', isSelected);
+      button.setAttribute('aria-pressed', String(isSelected));
+      button.addEventListener('click', () => {
+        const next = new Set(selectedAgendaMonths());
+        if (next.has(value)) next.delete(value);
+        else next.add(value);
+        input.value = [...next].sort().join(',');
+        renderMonthPicker('agendaMonth', selectedYear);
+        renderAgenda();
+      });
+      grid.append(button);
+    });
+    return;
+  }
+  const [year, month] = (input.value || monthValue()).split('-').map(Number);
   document.getElementById(prefix + 'MonthDisplay').textContent = input.value ? monthPickerLabels[month - 1] + '/' + year : 'Todos';
   const allMonthsButton = document.getElementById(prefix + 'MonthAll');
   if (allMonthsButton) {
@@ -979,15 +1070,36 @@ function availableCityFilterOptions() {
   return cityOptions.map((item) => ({ value: item.id, label: item.name }));
 }
 
+function availableCompanyFilterOptions() {
+  const companyOptions = [...optionsByType.companies.filter((item) => item.active)];
+  surgeries.forEach((surgery) => {
+    if (!surgery.companyId || !surgery.company?.name || companyOptions.some((option) => option.id === surgery.companyId)) return;
+    companyOptions.push({ id: surgery.companyId, name: surgery.company.name, active: true });
+  });
+  return companyOptions.map((item) => ({ value: item.id, label: item.name }));
+}
+
+function availableHospitalFilterOptions() {
+  return [...new Set(surgeries.map((surgery) => surgery.hospital?.name?.trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'pt-BR'))
+    .map((name) => ({ value: name, label: name }));
+}
+
 function populateAgendaFilters() {
   const doctor = document.getElementById('agendaDoctorFilter');
   const city = document.getElementById('agendaCityFilter');
+  const company = document.getElementById('agendaCompanyFilter');
+  const hospital = document.getElementById('agendaHospitalFilter');
   const status = document.getElementById('agendaStatusFilter');
   const selectedDoctor = doctor.value;
   const selectedCity = city.value;
+  const selectedCompany = company.value;
+  const selectedHospital = hospital.value;
   const selectedStatus = status.value;
   populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todos os cirurgiões', selectedDoctor);
   populateFilter(city, availableCityFilterOptions(), 'Todas', selectedCity);
+  populateFilter(company, availableCompanyFilterOptions(), 'Todas as empresas', selectedCompany);
+  populateFilter(hospital, availableHospitalFilterOptions(), 'Todos os hospitais', selectedHospital);
   status.replaceChildren();
   const all = document.createElement('option');
   all.value = '';
@@ -1056,21 +1168,52 @@ function dateLabel(date, withWeekday = false) {
 }
 
 function filteredAgenda() {
-  const month = document.getElementById('agendaMonth').value;
+  const months = selectedAgendaMonths();
   const doctor = document.getElementById('agendaDoctorFilter').value;
   const city = document.getElementById('agendaCityFilter').value;
+  const company = document.getElementById('agendaCompanyFilter').value;
+  const hospital = document.getElementById('agendaHospitalFilter').value;
   const status = document.getElementById('agendaStatusFilter').value;
+  const patient = document.getElementById('agendaPatientSearch').value.trim().toLocaleLowerCase('pt-BR');
   return surgeries.filter((surgery) => {
-    if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
+    if (months.length && (!surgery.date || !months.includes(surgery.date.slice(0, 7)))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
     // Bloqueios antigos sem cidade permanecem visíveis, pois sua cidade não
     // pode ser inferida. Os novos respeitam o filtro quando têm cidade salva.
-    if (isAgendaBlockRecord(surgery)) return !city || !surgery.cityId || surgery.cityId === city;
+    if (isAgendaBlockRecord(surgery)) {
+      if (city && surgery.cityId && surgery.cityId !== city) return false;
+      if (company && surgery.companyId !== company) return false;
+      if (patient && !(surgery.reservationName || '').toLocaleLowerCase('pt-BR').includes(patient)) return false;
+      return true;
+    }
     if (city && surgery.cityId !== city) return false;
+    if (company && surgery.companyId !== company) return false;
+    if (hospital && surgery.hospital?.name !== hospital) return false;
+    if (patient && !(surgery.patient || surgery.reservationName || '').toLocaleLowerCase('pt-BR').includes(patient)) return false;
     if (status === 'reserved' && !surgery.isReserved) return false;
     if (status && status !== 'reserved' && (surgery.isReserved || surgery.statusId !== status)) return false;
     return true;
-  }).sort((a, b) => a.date.localeCompare(b.date) || a.time.localeCompare(b.time));
+  }).sort((a, b) => (a.date || '').localeCompare(b.date || '') || (a.time || '').localeCompare(b.time || ''));
+}
+
+function agendaPeriodLabel() {
+  const months = selectedAgendaMonths();
+  return months.length ? months.map((value) => agendaMonthLabel(value, true)).join(', ') : 'Todos os meses';
+}
+
+function selectedAgendaCompanyLabel() {
+  const id = document.getElementById('agendaCompanyFilter').value;
+  return id ? optionsByType.companies.find((company) => company.id === id)?.name || surgeries.find((surgery) => surgery.companyId === id)?.company?.name || 'Empresa selecionada' : 'Todas as empresas';
+}
+
+function agendaMonthHeading(date) {
+  if (!date) return 'Data não informada';
+  const [year, month] = date.slice(0, 7).split('-').map(Number);
+  return new Intl.DateTimeFormat('pt-BR', { month: 'long', year: 'numeric' }).format(new Date(year, month - 1, 1)).toLocaleUpperCase('pt-BR');
+}
+
+function agendaCompanyLabel(surgery) {
+  return surgery.company?.name || 'Empresa não definida';
 }
 
 function appendCell(row, value, className = '') {
@@ -1103,14 +1246,27 @@ function renderAgenda() {
   table.hidden = rows.length === 0;
   empty.hidden = rows.length > 0;
   document.getElementById('agendaResultCount').textContent = rows.length + (rows.length === 1 ? ' horário' : ' horários');
+  document.getElementById('agendaPrintMeta').textContent = 'Empresa: ' + selectedAgendaCompanyLabel() + ' · Período: ' + agendaPeriodLabel();
   let currentDate = null;
+  let currentMonth = null;
   rows.forEach((surgery) => {
+    const monthKey = surgery.date ? surgery.date.slice(0, 7) : 'undated';
+    if (monthKey !== currentMonth) {
+      currentMonth = monthKey;
+      const monthGroup = document.createElement('tr');
+      monthGroup.className = 'agenda-month-group';
+      const monthCell = document.createElement('td');
+      monthCell.colSpan = 9;
+      monthCell.textContent = agendaMonthHeading(surgery.date);
+      monthGroup.append(monthCell);
+      tbody.append(monthGroup);
+    }
     if (surgery.date !== currentDate) {
       currentDate = surgery.date;
       const group = document.createElement('tr');
       group.className = 'agenda-day-group';
       const cell = document.createElement('td');
-      cell.colSpan = 8;
+      cell.colSpan = 9;
       cell.textContent = dateLabel(surgery.date, true);
       group.append(cell);
       tbody.append(group);
@@ -1128,6 +1284,7 @@ function renderAgenda() {
     appendCell(row, surgery.time);
     appendCell(row, agendaBlock ? surgery.reservationName : surgery.isReserved ? (surgery.reservationName || '— Horário reservado —') : surgery.patient, surgery.isReserved && !agendaBlock ? 'reserved-copy' : '');
     appendCell(row, surgery.doctor?.name);
+    appendCell(row, agendaCompanyLabel(surgery), 'agenda-company-cell');
     const hospitalCell = document.createElement('td');
     row.append(hospitalCell);
     if (!agendaBlock) {
@@ -1167,6 +1324,7 @@ const managementIcons = {
   calendar: 'calendar_month',
   time: 'schedule',
   staff: 'badge',
+  business: 'business',
   hospital: 'local_hospital',
   location: 'location_on',
   doctor: 'medical_services',
@@ -1211,13 +1369,19 @@ function managementDate(value) {
 function populateManagementFilters() {
   const month = document.getElementById('managementMonth');
   const doctor = document.getElementById('managementDoctorFilter');
+  const company = document.getElementById('managementCompanyFilter');
+  const hospital = document.getElementById('managementHospitalFilter');
   const city = document.getElementById('managementCityFilter');
   const status = document.getElementById('managementStatusFilter');
-  if (!month || !doctor || !city || !status) return;
+  if (!month || !doctor || !company || !hospital || !city || !status) return;
   const selectedDoctor = doctor.value;
+  const selectedCompany = company.value;
+  const selectedHospital = hospital.value;
   const selectedCity = city.value;
   const selectedStatus = status.value;
   populateFilter(doctor, optionsByType.doctors.filter((item) => item.active).map((item) => ({ value: item.id, label: item.name })), 'Todos os cirurgiões', selectedDoctor);
+  populateFilter(company, availableCompanyFilterOptions(), 'Todas as empresas', selectedCompany);
+  populateFilter(hospital, availableHospitalFilterOptions(), 'Todos os hospitais', selectedHospital);
   populateFilter(city, availableCityFilterOptions(), 'Todas as cidades', selectedCity);
   status.replaceChildren();
   const all = document.createElement('option');
@@ -1236,6 +1400,8 @@ function populateManagementFilters() {
 function filteredManagementSurgeries() {
   const month = document.getElementById('managementMonth').value;
   const doctor = document.getElementById('managementDoctorFilter').value;
+  const company = document.getElementById('managementCompanyFilter').value;
+  const hospital = document.getElementById('managementHospitalFilter').value;
   const city = document.getElementById('managementCityFilter').value;
   const status = document.getElementById('managementStatusFilter').value;
   const patient = document.getElementById('managementPatientSearch').value.trim().toLocaleLowerCase('pt-BR');
@@ -1243,6 +1409,8 @@ function filteredManagementSurgeries() {
     if (surgery.isReserved || surgery.isAgendaBlock || surgery.recordType === 'agenda_block') return false;
     if (month && (!surgery.date || !surgery.date.startsWith(month))) return false;
     if (doctor && surgery.doctorId !== doctor) return false;
+    if (company && surgery.companyId !== company) return false;
+    if (hospital && (surgery.hospital?.name || '').trim() !== hospital) return false;
     if (city && surgery.cityId !== city) return false;
     if (status && surgery.statusId !== status) return false;
     if (patient && !(surgery.patient || '').toLocaleLowerCase('pt-BR').includes(patient)) return false;
@@ -1333,6 +1501,7 @@ function createSurgeryCard(surgery) {
     ]),
     createManagementGroup([
       ['staff', 'Orçamentista', surgery.employeeName || surgery.employee?.name],
+      ['business', 'Empresa', surgery.company?.name || 'Empresa não definida'],
       ['hospital', 'Hospital', surgery.hospital?.name],
       ['location', 'Cidade', surgery.city?.name],
     ]),
@@ -1344,6 +1513,7 @@ function createSurgeryCard(surgery) {
       ['surgery', 'Cirurgia', surgery.isReserved ? '—' : surgery.procedure],
       ['calendar', 'Data do retorno', managementDate(surgery.returnDate)],
       ['surgery', 'Tipo do retorno', surgery.returnType],
+      ...(surgery.convenio?.trim() ? [['business', 'Convênio', surgery.convenio]] : []),
     ]),
     createManagementGroup([
       ['notes', 'Observações', surgery.observations],
@@ -1407,6 +1577,14 @@ function renderSharePreview() {
   const container = document.getElementById('shareAgendaContent');
   const rows = filteredAgenda();
   container.replaceChildren();
+  const brand = document.createElement('p');
+  brand.className = 'share-brand';
+  brand.textContent = 'OperaMeds · Organização Cirúrgica';
+  container.append(brand);
+  const title = document.createElement('p');
+  title.className = 'share-period';
+  title.textContent = 'Empresa: ' + selectedAgendaCompanyLabel() + ' · Período: ' + agendaPeriodLabel();
+  container.append(title);
   if (!rows.length) {
     const empty = document.createElement('p');
     empty.className = 'share-empty';
@@ -1414,20 +1592,11 @@ function renderSharePreview() {
     container.append(empty);
     return;
   }
-  const brand = document.createElement('p');
-  brand.className = 'share-brand';
-  brand.textContent = 'OperaMeds · Organização Cirúrgica';
-  container.append(brand);
-  const title = document.createElement('p');
-  title.className = 'share-period';
-  const selectedMonth = document.getElementById('agendaMonth').value;
-  title.textContent = selectedMonth || 'Todos os meses';
-  container.append(title);
   const table = document.createElement('table');
   table.className = 'share-table';
   const head = document.createElement('thead');
   const headerRow = document.createElement('tr');
-  ['Data', 'Horário', 'Médica / Cirurgião', 'Hospital', 'Motivo / Cirurgia', 'Status / Tipo'].forEach((label) => {
+  ['Data', 'Horário', 'Cirurgião', 'Empresa', 'Hospital / Cidade', 'Motivo / Cirurgia', 'Status / Tipo'].forEach((label) => {
     const th = document.createElement('th');
     th.textContent = label;
     headerRow.append(th);
@@ -1436,22 +1605,36 @@ function renderSharePreview() {
   table.append(head);
   const body = document.createElement('tbody');
   let currentDate = null;
+  let currentMonth = null;
   rows.forEach((surgery) => {
+    const monthKey = surgery.date ? surgery.date.slice(0, 7) : 'undated';
+    if (monthKey !== currentMonth) {
+      currentMonth = monthKey;
+      const monthGroup = document.createElement('tr');
+      monthGroup.className = 'agenda-month-group';
+      const cell = document.createElement('td');
+      cell.colSpan = 7;
+      cell.textContent = agendaMonthHeading(surgery.date);
+      monthGroup.append(cell);
+      body.append(monthGroup);
+    }
     if (surgery.date !== currentDate) {
       currentDate = surgery.date;
       const group = document.createElement('tr');
       group.className = 'agenda-day-group';
       const cell = document.createElement('td');
-      cell.colSpan = 6;
+      cell.colSpan = 7;
       cell.textContent = dateLabel(surgery.date, true);
       group.append(cell);
       body.append(group);
     }
     const row = document.createElement('tr');
+    if (isAgendaBlockRecord(surgery)) row.className = 'agenda-block-row';
     appendCell(row, surgery.date ? dateLabel(surgery.date) : '—');
     appendCell(row, surgery.time);
     appendCell(row, surgery.doctor?.name);
-    appendCell(row, surgery.hospital?.name);
+    appendCell(row, agendaCompanyLabel(surgery));
+    appendCell(row, [surgery.hospital?.name, surgery.city?.name].filter(Boolean).join(' · '));
     appendCell(row, isAgendaBlockRecord(surgery) ? surgery.reservationName : surgery.isReserved ? '—' : surgery.procedure);
     const statusCell = document.createElement('td');
     if (isAgendaBlockRecord(surgery)) {
@@ -1481,6 +1664,8 @@ function showLoginGate(message = '') {
 
 function enterApplication(user) {
   currentEmployee = user;
+  surgeriesLoadedAt = 0;
+  settingsLoadedAt = 0;
   document.getElementById('currentEmployeeAvatar').textContent = user.name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toLocaleUpperCase('pt-BR');
   document.getElementById('currentEmployeeName').textContent = user.name;
   document.getElementById('authGate').hidden = true;
@@ -1603,21 +1788,29 @@ document.getElementById('logoutButton').addEventListener('click', async () => {
   showLoginGate();
 });
 
-['agendaMonth', 'agendaDoctorFilter', 'agendaCityFilter', 'agendaStatusFilter'].forEach((id) => {
+['agendaMonth', 'agendaDoctorFilter', 'agendaCityFilter', 'agendaCompanyFilter', 'agendaHospitalFilter', 'agendaStatusFilter', 'agendaPatientSearch'].forEach((id) => {
   document.getElementById(id).addEventListener('change', (event) => {
     if (id === 'agendaMonth') enforceMonthMinimum(event.currentTarget);
     if (id === 'agendaMonth') renderMonthPicker('agendaMonth');
     renderAgenda();
   });
+  if (id === 'agendaPatientSearch') document.getElementById(id).addEventListener('input', renderAgenda);
 });
 document.getElementById('agendaMonth').value = monthValue();
 document.getElementById('agendaMonthAll').addEventListener('click', () => {
   document.getElementById('agendaMonth').value = '';
   renderMonthPicker('agendaMonth');
   renderAgenda();
-  closeMonthPicker('agenda');
 });
-['managementMonth', 'managementDoctorFilter', 'managementCityFilter', 'managementStatusFilter', 'managementPatientSearch'].forEach((id) => {
+document.getElementById('agendaMonthYearAll').addEventListener('click', () => {
+  const year = Math.max(2022, Math.min(9999, Number(document.getElementById('agendaMonthYear').value) || new Date().getFullYear()));
+  const months = new Set(selectedAgendaMonths());
+  for (let month = 1; month <= 12; month += 1) months.add(year + '-' + String(month).padStart(2, '0'));
+  document.getElementById('agendaMonth').value = [...months].sort().join(',');
+  renderMonthPicker('agendaMonth', year);
+  renderAgenda();
+});
+['managementMonth', 'managementDoctorFilter', 'managementCompanyFilter', 'managementHospitalFilter', 'managementCityFilter', 'managementStatusFilter', 'managementPatientSearch'].forEach((id) => {
   document.getElementById(id).addEventListener(id === 'managementPatientSearch' ? 'input' : 'change', (event) => {
     if (id === 'managementMonth') enforceMonthMinimum(event.currentTarget);
     if (id === 'managementMonth') renderMonthPicker('managementMonth');

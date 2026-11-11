@@ -11,7 +11,7 @@ const apiOnlyMode = process.argv.includes('--api-only');
 const mongoUri = process.env.MONGODB_URI;
 const databaseName = process.env.MONGODB_DB || 'operamed';
 const allowedOrigins = new Set((process.env.OPERAMEDS_ALLOWED_ORIGINS || '').split(',').map((origin) => origin.trim()).filter(Boolean));
-const optionTypes = new Set(['doctors', 'statuses', 'cities']);
+const optionTypes = new Set(['doctors', 'statuses', 'cities', 'companies']);
 const collectionNames = { options: 'settings_options', surgeries: 'surgeries', employees: 'employees', budgeters: 'budgeters', users: 'users', sessions: 'sessions', metadata: 'system_metadata' };
 const scrypt = promisify(crypto.scrypt);
 const loginAttempts = new Map();
@@ -67,6 +67,22 @@ async function getCollections() {
           upsert: true,
         },
       })));
+      const options = db.collection(collectionNames.options);
+      for (const name of ['Reabilicare', 'Oftalmed']) {
+        const nameKey = normalizedName(name);
+        const existing = await options.findOne({ type: 'companies', $or: [{ nameKey }, { name: { $regex: '^' + name + '$', $options: 'i' } }] });
+        if (!existing) {
+          try {
+            await options.updateOne(
+              { type: 'companies', nameKey },
+              { $setOnInsert: { type: 'companies', name, nameKey, color: null, active: true, commissionEligible: false, createdAt: new Date(), updatedAt: new Date() } },
+              { upsert: true },
+            );
+          } catch (error) {
+            if (!isDuplicateError(error)) throw error;
+          }
+        }
+      }
     })().catch((error) => {
       indexesPromise = undefined;
       throw error;
@@ -275,6 +291,14 @@ async function validateSurgeryReferences(collections, values, previous = null) {
     result.cityId = cityId;
   } else result.cityId = null;
 
+  const companyId = typeof values.companyId === 'string' ? values.companyId : '';
+  if (companyId) {
+    if (!ObjectId.isValid(companyId)) throw Object.assign(new Error('Selecione uma empresa válida.'), { status: 400 });
+    const company = await collections.options.findOne({ _id: new ObjectId(companyId), type: 'companies' });
+    if (!company || (!company.active && (!previous || previous.companyId !== companyId))) throw Object.assign(new Error('Selecione uma empresa ativa.'), { status: 400 });
+    result.companyId = companyId;
+  } else result.companyId = null;
+
   if (isAgendaBlock) {
     result.employeeId = null;
     result.employeeName = '';
@@ -340,7 +364,7 @@ function validateSurgeryDetails(body) {
     if (!reservationName) throw Object.assign(new Error('Informe o nome ou motivo do bloqueio.'), { status: 400 });
     if (reservationName.length > 160) throw Object.assign(new Error('O motivo do bloqueio deve ter até 160 caracteres.'), { status: 400 });
     return {
-      patient: '', procedure: '', anesthetist: '', employeeName: '', hospitalName: '', phone: '',
+      patient: '', procedure: '', anesthetist: '', employeeName: '', hospitalName: '', phone: '', convenio: '',
       consultationDate: '', totalAmount: null, depositPaid: null, pendingAmount: null,
       returnDate: '', returnType: '', observations: '', reservationName,
       date, time, isReserved: false, recordType: 'agenda_block',
@@ -353,6 +377,7 @@ function validateSurgeryDetails(body) {
     ['anesthetist', 'anestesista', 160, false],
     ['employeeName', 'orçamentista', 160, false],
     ['hospitalName', 'hospital', 160, false],
+    ['convenio', 'convênio', 160, false],
     ['reservationName', 'identificação do horário', 160, false],
     ['phone', 'telefone', 40, false],
     ['returnType', 'tipo do retorno', 120, false],
@@ -390,6 +415,7 @@ async function serializeSurgery(surgery, collections, lookups = null) {
     ['employeeId', 'employee', collections.budgeters, null],
     ['statusId', 'status', collections.options, 'statuses'],
     ['cityId', 'city', collections.options, 'cities'],
+    ['companyId', 'company', collections.options, 'companies'],
   ]) {
     const id = surgery[idField] || null;
     const lookup = collection === collections.budgeters ? lookups?.budgeters : lookups?.options;
@@ -433,7 +459,7 @@ async function serializeSurgery(surgery, collections, lookups = null) {
     recordType: surgery.recordType || (surgery.isReserved === true ? 'reservation' : 'surgery'),
     createdAt: surgery.createdAt,
     updatedAt: surgery.updatedAt,
-    ...Object.fromEntries(['phone', 'consultationDate', 'returnDate', 'returnType', 'observations', 'totalAmount', 'depositPaid', 'pendingAmount']
+    ...Object.fromEntries(['phone', 'consultationDate', 'returnDate', 'returnType', 'observations', 'convenio', 'totalAmount', 'depositPaid', 'pendingAmount']
       .filter((field) => Object.hasOwn(surgery, field))
       .map((field) => [field, surgery[field]])),
   };
@@ -442,7 +468,7 @@ async function serializeSurgery(surgery, collections, lookups = null) {
 async function serializeSurgeries(data, collections) {
   const ids = new Set();
   data.forEach((surgery) => {
-    ['doctorId', 'employeeId', 'statusId', 'cityId', 'hospitalId'].forEach((key) => {
+    ['doctorId', 'employeeId', 'statusId', 'cityId', 'companyId', 'hospitalId'].forEach((key) => {
       if (typeof surgery[key] === 'string' && ObjectId.isValid(surgery[key])) ids.add(surgery[key]);
     });
   });

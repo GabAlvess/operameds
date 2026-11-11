@@ -113,6 +113,8 @@
 @media(max-width:1120px){.agenda-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:700px){.agenda-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:430px){.agenda-filters{grid-template-columns:1fr}}
+@media(max-width:700px){#surgeryForm.is-agenda-block #agendaBlockFields>.span-6{grid-column:1/-1}}
+@media print{body.printing-agenda .agenda-month-group td{background:#e7eef7!important;color:#173e57!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 
 /* Material Symbols Rounded, loaded from the official Google Fonts library */
 .material-symbols{font-family:"Material Symbols Rounded";font-weight:normal;font-style:normal;font-size:20px;line-height:1;display:inline-flex;align-items:center;justify-content:center;white-space:nowrap;direction:ltr;font-feature-settings:"liga";-webkit-font-feature-settings:"liga";-webkit-font-smoothing:antialiased;font-variation-settings:"FILL" 0,"wght" 400,"GRAD" 0,"opsz" 24}
@@ -145,7 +147,7 @@
 .archived-icon-button .material-symbols{font-size:18px}
 @media(max-width:560px){.archived-surgery-row{align-items:flex-start;padding:12px 9px}.archived-surgery-details>span:not(.status-chip){white-space:normal;line-height:1.45}.archived-surgery-actions{gap:4px}.archived-icon-button{width:31px;height:31px}}
 .dashboard-reservation-note{margin:10px 2px 0;color:#587582;font-size:11px;text-align:right}.reservation-convert{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 14px;padding:12px 14px;border:1px solid #cfe5e8;border-radius:10px;background:#f2faf9;color:#3d6672;font-size:11px;line-height:1.45}.reservation-convert[hidden]{display:none}.reservation-convert .button{flex:none}
-#page-gestao .management-filters{grid-template-columns:repeat(5,minmax(0,1fr));gap:14px}
+#page-gestao .management-filters{grid-template-columns:1.05fr repeat(5,minmax(0,1fr)) 1.35fr;gap:12px}
 .month-picker-chevron{transform:none}
 #page-agenda .agenda-result-line{display:flex;justify-content:flex-end;margin:-4px 2px 9px}
 #page-agenda .agenda-result-count{margin:0}
@@ -261,3 +263,19 @@
 .surgery-return-grid>.form-field:not(.span-12){grid-column:auto;min-width:0}
 .surgery-return-grid>.form-field.span-12{grid-column:1/-1}
 @media(max-width:700px){.surgery-return-grid{grid-template-columns:minmax(0,1fr)}.surgery-return-grid>.form-field{grid-column:1/-1}}
+
+/* Agenda com múltiplos períodos e empresas */
+.agenda-filters{grid-template-columns:repeat(7,minmax(0,1fr))}
+.agenda-month-group td{height:37px;padding:8px 15px;background:#e7eef7;color:#173e57;font-size:12px;font-weight:800;letter-spacing:.45px}
+.agenda-print-meta{margin:0 0 8px;color:#526d7a;font-size:10px;font-weight:600}
+.agenda-company-cell{font-weight:600;white-space:nowrap}
+#agendaMonthPopover{width:min(360px,calc(100vw - 42px))}
+#agendaMonthYear{width:90px;height:34px;padding:0 8px;border:1px solid #dce6e9;border-radius:7px;background:#f8fbfc;color:#24475a;font:inherit;font-size:12px;font-weight:600}
+.agenda-month-picker-actions{display:grid;gap:6px}
+.agenda-month-picker-actions .month-picker-all{margin:0;font-size:11px}
+.agenda-month-selection{max-height:62px;overflow:auto;margin-top:9px;color:#71818c;font-size:10px;line-height:1.45}
+.share-table{min-width:820px}
+.share-table tr.agenda-block-row td{background:#EDE4FF;color:#59359A;border-color:#dccdf5;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+@media(max-width:1500px){.agenda-filters{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:700px){.agenda-filters{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:430px){.agenda-filters{grid-template-columns:1fr}}
