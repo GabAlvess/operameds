@@ -1240,6 +1240,18 @@ function appendCell(row, value, className = '') {
   return cell;
 }
 
+function appendProcedureCell(row, value) {
+  const cell = document.createElement('td');
+  cell.className = 'procedure-cell';
+  const text = value || '—';
+  const content = document.createElement('span');
+  content.textContent = text;
+  if (value) content.title = String(value);
+  cell.append(content);
+  row.append(cell);
+  return cell;
+}
+
 async function openSurgeryFromRow(surgery) {
   try {
     if (!settingsLoaded) await loadSettings();
@@ -1352,7 +1364,7 @@ function renderAgenda() {
     if (agendaBlock) { row.append(document.createElement('td'), document.createElement('td'), document.createElement('td')); }
     else {
       appendCell(row, surgery.convenio);
-      appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
+      appendProcedureCell(row, surgery.isReserved ? '—' : surgery.procedure);
       appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
     }
     const statusCell = document.createElement('td');
@@ -1724,7 +1736,7 @@ function renderSharePreview() {
     if (agendaBlock) row.append(document.createElement('td'));
     else appendCell(row, surgery.convenio);
     if (agendaBlock) row.append(document.createElement('td'));
-    else appendCell(row, surgery.isReserved ? '—' : surgery.procedure);
+    else appendProcedureCell(row, surgery.isReserved ? '—' : surgery.procedure);
     if (agendaBlock) row.append(document.createElement('td'));
     else appendCell(row, surgery.isReserved ? '—' : surgery.anesthetist);
     const statusCell = document.createElement('td');

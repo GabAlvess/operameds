@@ -294,6 +294,10 @@
 #agendaMonthYear{width:90px;height:34px;padding:0 8px;border:1px solid #dce6e9;border-radius:7px;background:#f8fbfc;color:#24475a;font:inherit;font-size:12px;font-weight:600}
 .agenda-month-selection{max-height:62px;overflow:auto;margin-top:9px;color:#71818c;font-size:10px;line-height:1.45}
 .share-table tr.agenda-block-row td{background:var(--agenda-block-background,#EDE4FF);color:var(--agenda-block-foreground,#59359A);border-color:var(--agenda-block-border,#dccdf5);-webkit-print-color-adjust:exact;print-color-adjust:exact}
+#page-agenda .agenda-table tbody td.procedure-cell{height:auto;white-space:normal;overflow:hidden;text-overflow:clip;vertical-align:middle}
+#page-agenda .agenda-table .procedure-cell>span,.share-table .procedure-cell>span{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:normal;word-break:normal;text-overflow:clip;white-space:normal;line-height:1.25}
+.share-table td.procedure-cell{height:auto;white-space:normal;overflow:hidden;text-overflow:clip;vertical-align:middle}
+#page-gestao .surgery-card-details .management-info-procedure .management-info-value{display:-webkit-box;-webkit-box-orient:vertical;-webkit-line-clamp:2;overflow:hidden;overflow-wrap:normal;word-break:normal;text-overflow:clip;white-space:normal;line-height:1.25}
 #page-gestao .surgery-card{padding:10px 12px 9px;border-radius:12px}
 #page-gestao .surgery-card-header{padding:0 1px 8px;gap:10px}
 #page-gestao .surgery-card-patient{gap:8px}
